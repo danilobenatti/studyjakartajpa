@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="3.2" xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd">
+	<!-- Define persistence unit -->
+	<persistence-unit name="persistence-unit" transaction-type="RESOURCE_LOCAL">
+		<description>JPA Study Beginners</description>
+		<provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+		<!-- <non-jta-data-source></non-jta-data-source> -->
+		<!-- By default your mappings can be defined in orm.xml file, -->
+		<!-- which is discovered automatically. -->
+		<!-- <mapping-file>META-INF/orm.xml</mapping-file> -->
+		<!-- Enables auto discovery of persistent classes, -->
+		<!-- otherwise they must be listed using <class> -->
+		<class>studyjakartajpa.model.Person</class>
+		<class>studyjakartajpa.model.Address</class>
+		<exclude-unlisted-classes>false</exclude-unlisted-classes>
+
+		<properties>
+			<!-- database connection -->
+			<property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver" />
+			<property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/jpaforbeginners" />
+			<property name="jakarta.persistence.jdbc.user" value="postgres" />
+			<property name="jakarta.persistence.jdbc.password" value="123456" />
+			<property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create" />
+			<property name="jakarta.persistence.sql-load-script-source" value="META-INF/initial-data.sql" />
+			<property name="jakarta.persistence.schema-generation.scripts.action" value="drop-and-create"/>
+			<property name="jakarta.persistence.schema-generation.scripts.create-target" value="create-schema.sql"/>
+			<property name="jakarta.persistence.schema-generation.scripts.drop-target" value="drop-schema.sql"/>
+
+			<property name="eclipselink.target-database" value="PostgreSQL" />
+			<property name="eclipselink.jdbc.native-sql" value="true" />
+			<property name="eclipselink.ddl-generation.output-mode" value="both"/>
+			<property name="eclipselink.application-location" value="./src/main/resources/ddl" />
+
+			<!-- configuring batch writing -->
+			<property name="eclipselink.jdbc.batch-writing" value="jdbc" />
+			<property name="eclipselink.jdbc.batch-writing.size" value="50" />
+
+			<!-- configure logging -->
+			<property name="eclipselink.logging.level" value="FINER" />
+			<property name="eclipselink.logging.level.sql" value="FINEST" />
+			<property name="eclipselink.logging.parameters" value="true" />
+			<property name="eclipselink.logging.timestamp" value="true" />
+			<property name="eclipselink.logging.session" value="true" />
+			<property name="eclipselink.logging.thread" value="false" />
+			<property name="eclipselink.logging.exceptions" value="true" />
+			<property name="eclipselink.logging.logger" value="DefaultLogger" />
+		</properties>
+	</persistence-unit>
+</persistence>
