@@ -3,12 +3,18 @@ package studyjakartajpa.model;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.persistence.annotations.CascadeOnDelete;
 import org.eclipse.persistence.annotations.PrivateOwned;
 
@@ -18,7 +24,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -78,9 +83,7 @@ public class Person implements Serializable {
 	@CollectionTable(name = "tbl_persons_phones", catalog = "jpaforbeginners",
 		schema = "public",
 		joinColumns = @JoinColumn(name = "person_id", table = "tbl_persons",
-			referencedColumnName = "id",
-			foreignKey = @ForeignKey(name = "fk_tbl_persons_phones_person_id",
-				foreignKeyDefinition = "FOREIGN KEY (person_id) REFERENCES jpaforbeginners.public.tbl_persons (ID)")))
+			referencedColumnName = "id"))
 	@MapKeyColumn(name = "col_type", columnDefinition = "char(1)",
 		nullable = false)
 	@Column(name = "col_number", length = 20, nullable = false)
@@ -94,9 +97,10 @@ public class Person implements Serializable {
 		this.phones.putAll(phones);
 	}
 	
+	@PrivateOwned
 	@CascadeOnDelete
-	@OneToMany(mappedBy = "person", cascade = CascadeType.ALL,
-		fetch = FetchType.EAGER)
+	@OneToMany(mappedBy = "person", fetch = FetchType.EAGER,
+		orphanRemoval = true, cascade = CascadeType.ALL)
 	private List<Address> addresses = new ArrayList<>();
 	
 	public boolean setAddress(Address address) {
@@ -113,10 +117,29 @@ public class Person implements Serializable {
 	public Address getPrincipalAddress() {
 		Optional<Address> address = this.addresses.stream()
 				.filter(Address::isPrincipal).findFirst();
-		if (address.isPresent()) {
+		if (address.isPresent())
 			return address.get();
-		}
 		return null;
+	}
+	
+	@PrivateOwned
+	@CascadeOnDelete
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(name = "tbl_persons_emails", catalog = "jpaforbeginners",
+		schema = "public", joinColumns = @JoinColumn(name = "person_id"))
+	@Column(name = "col_email", length = 150, nullable = false)
+	private Set<String> emails = new HashSet<>();
+	
+	public void setEmail(String email) {
+		this.emails.add(email);
+	}
+	
+	public void setEmails(Set<String> emails) {
+		this.emails.addAll(emails);
+	}
+	
+	public void setEmails(String... email) {
+		Set.of(email).forEach(this.emails::add);
 	}
 	
 	@NonNull
@@ -127,8 +150,8 @@ public class Person implements Serializable {
 	private LocalDate deathdate;
 	
 	@Setter(value = AccessLevel.NONE)
-	@Column(name = "col_dateinsert", columnDefinition = "timestamp",
-		updatable = false)
+	@Column(name = "col_dateinsert", updatable = false,
+		columnDefinition = "timestamp with time zone")
 	private LocalDateTime dateCreate;
 	
 	@jakarta.persistence.PrePersist
@@ -137,8 +160,8 @@ public class Person implements Serializable {
 	}
 	
 	@Setter(value = AccessLevel.NONE)
-	@Column(name = "col_dateupdate", columnDefinition = "timestamp",
-		insertable = false)
+	@Column(name = "col_dateupdate", insertable = false,
+		columnDefinition = "timestamp with time zone")
 	private LocalDateTime dateUpdate;
 	
 	@jakarta.persistence.PreUpdate
@@ -147,25 +170,88 @@ public class Person implements Serializable {
 	}
 	
 	@Builder(setterPrefix = "with")
-	public static Person of(String name, Character gender, LocalDate birth) {
+	public static Person of(String firstname, Character gender,
+			LocalDate birthdate) {
 		Person person = new Person();
-		person.setFirstname(name);
+		person.setFirstname(firstname);
 		person.setGender(gender);
-		person.setBirthdate(birth);
+		person.setBirthdate(birthdate);
 		return person;
 		
 	}
 	
 	@Builder(setterPrefix = "with")
-	public static Person of(String name, Character gender, LocalDate birth,
-			Map<Character, String> phones) {
+	public static Person of(String firstname, Character gender,
+			LocalDate birthdate, Map<Character, String> phones) {
 		Person person = new Person();
-		person.setFirstname(name);
+		person.setFirstname(firstname);
 		person.setGender(gender);
-		person.setBirthdate(birth);
+		person.setBirthdate(birthdate);
 		person.setPhones(phones);
 		return person;
 		
+	}
+	
+	@Builder(setterPrefix = "with")
+	public static Person of(String firstname, Character gender,
+			LocalDate birthdate, Map<Character, String> phones,
+			Set<String> emails) {
+		Person person = new Person();
+		person.setFirstname(firstname);
+		person.setGender(gender);
+		person.setBirthdate(birthdate);
+		person.setPhones(phones);
+		person.setEmails(emails);
+		return person;
+		
+	}
+	
+	public boolean isAlive() {
+		return getDeathdate() == null && getBirthdate() != null;
+	}
+	
+	public Character getSymbol() {
+		/**
+		 * '\u2605' BLACK STAR '\u271D' LATIN CROSS '\u272E' HEAVY OUTLINED
+		 * BLACK STAR '\u271F' OUTLINED LATIN CROSS
+		 **/
+		return isAlive() ? '\u272E' : '\u271F';
+	}
+	
+	public int getAge() {
+		if (isAlive() && getBirthdate().isBefore(LocalDate.now()))
+			return Period.between(getBirthdate(), LocalDate.now()).getYears();
+		else
+			return Period.between(getBirthdate(), getDeathdate()).getYears();
+	}
+	
+	public String getAgeWithSymbol() {
+		return StringUtils.join(getAge(), getSymbol());
+	}
+	
+	public boolean validyDeathDate(LocalDate deathdate) {
+		return deathdate.isAfter(getBirthdate());
+	}
+	
+	public void personDiedNow() {
+		if (isAlive() && validyDeathDate(LocalDate.now()))
+			setDeathdate(LocalDate.now());
+	}
+	
+	public void personDiedIn(LocalDate deathDate) {
+		if (isAlive() && validyDeathDate(deathDate))
+			setDeathdate(deathDate);
+	}
+	
+	public void personDiedIn(Date deathDate) {
+		ZoneId zoneId = ZoneId.systemDefault();
+		LocalDate date = deathDate.toInstant().atZone(zoneId).toLocalDate();
+		personDiedIn(date);
+	}
+	
+	public void personDiedIn(Date deathDate, ZoneId zone) {
+		LocalDate date = deathDate.toInstant().atZone(zone).toLocalDate();
+		personDiedIn(date);
 	}
 	
 }

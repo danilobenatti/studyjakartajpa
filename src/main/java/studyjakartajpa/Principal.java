@@ -5,6 +5,7 @@ import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
@@ -51,19 +52,22 @@ public class Principal {
 		
 		Person p3 = Person.of("Jhon", 'M', LocalDate.of(1982, 7, 3));
 		p3.setPhones(Map.of('M', "(11)99999-8888", 'W', "(11)8888-7777"));
+		p3.setEmails("jhonjj@mail.com", "jjj@mail.com");
 		
 		Person p4 = Person.of("Bett", 'F', LocalDate.of(1988, 8, 24),
 				Map.of('M', "(11)97777-6666", 'W', "(11)2121-1122"));
+		p4.setEmail("nett9@mail.com");
 		
-		Person p5 = Person.builder().withName("Rony").withGender('M')
-				.withBirth(LocalDate.of(1950, 1, 5)).build();
+		Person p5 = Person.builder().withFirstname("Rony").withGender('M')
+				.withBirthdate(LocalDate.of(1950, 1, 5)).build();
 		p5.setPhones(Map.ofEntries(Map.entry('M', "(11)98989-9898"),
 				Map.entry('W', "(11)5555-4444")));
+		p5.setEmails(Set.of("rony123@mail.com","rony@mail.com"));
 		
 		var a51 = Address.builder().withNumber("350").withStreet("5th Avenue")
 				.withCity("New York").withState("NY").withCountry("USA")
-				.withZipCode("10118").withIsPrincipal(false).withPerson(p5)
-				.build();
+				.withZipCode("10118").withPerson(p5).build();
+		a51.setPrincipal(false);
 		
 		var a52 = Address.of("233", "Paulista Avenue", "7th", "São Paulo", "SP",
 				"Brazil", "01310-100", true, p5);
