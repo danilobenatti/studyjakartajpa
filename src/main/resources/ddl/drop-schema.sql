@@ -2,8 +2,10 @@ ALTER TABLE jpaforbeginners.public.tbl_addresses DROP CONSTRAINT FK_tbl_addresse
 ALTER TABLE jpaforbeginners.public.tbl_persons_emails DROP CONSTRAINT FK_tbl_persons_emails_person_id
 ALTER TABLE jpaforbeginners.public.tbl_persons_phones DROP CONSTRAINT FK_tbl_persons_phones_person_id
 DROP TABLE jpaforbeginners.public.tbl_persons CASCADE
+DROP TABLE jpaforbeginners.public.tbl_products CASCADE
 DROP TABLE jpaforbeginners.public.tbl_addresses CASCADE
 DROP TABLE jpaforbeginners.public.tbl_persons_emails CASCADE
 DROP TABLE jpaforbeginners.public.tbl_persons_phones CASCADE
-DROP SEQUENCE jpaforbeginners.public.persons_id_seq
+DROP SEQUENCE jpaforbeginners.public.products_id_seq
 DROP SEQUENCE jpaforbeginners.public.addresses_id_seq
+DROP SEQUENCE jpaforbeginners.public.persons_id_seq

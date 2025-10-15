@@ -15,6 +15,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.eclipse.persistence.annotations.CascadeOnDelete;
 import org.eclipse.persistence.annotations.PrivateOwned;
 
@@ -40,14 +42,13 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
+import studyjakartajpa.util.Imc;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @RequiredArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@ToString
 @Entity
 @Table(name = "tbl_persons", catalog = "jpaforbeginners", schema = "public")
 public class Person implements Serializable {
@@ -70,10 +71,10 @@ public class Person implements Serializable {
 	@Column(name = "col_gender", nullable = false)
 	private Character gender;
 	
-	@Column(name = "col_weight")
+	@Column(name = "col_weight", columnDefinition = "numeric(4,2)")
 	private float weight;
 	
-	@Column(name = "col_height")
+	@Column(name = "col_height", columnDefinition = "numeric(3,2)")
 	private float height;
 	
 	@PrivateOwned
@@ -177,7 +178,31 @@ public class Person implements Serializable {
 		person.setGender(gender);
 		person.setBirthdate(birthdate);
 		return person;
-		
+	}
+	
+	@Builder(setterPrefix = "with")
+	public static Person of(String firstname, Character gender, float weight,
+			float height, LocalDate birthdate) {
+		Person person = new Person();
+		person.setFirstname(firstname);
+		person.setGender(gender);
+		person.setWeight(weight);
+		person.setHeight(height);
+		person.setBirthdate(birthdate);
+		return person;
+	}
+	
+	@Builder(setterPrefix = "with")
+	public static Person of(String firstname, Character gender, float weight,
+			float height, LocalDate birthdate, Map<Character, String> phones) {
+		Person person = new Person();
+		person.setFirstname(firstname);
+		person.setGender(gender);
+		person.setWeight(weight);
+		person.setHeight(height);
+		person.setBirthdate(birthdate);
+		person.setPhones(phones);
+		return person;
 	}
 	
 	@Builder(setterPrefix = "with")
@@ -189,7 +214,6 @@ public class Person implements Serializable {
 		person.setBirthdate(birthdate);
 		person.setPhones(phones);
 		return person;
-		
 	}
 	
 	@Builder(setterPrefix = "with")
@@ -203,6 +227,30 @@ public class Person implements Serializable {
 		person.setPhones(phones);
 		person.setEmails(emails);
 		return person;
+	}
+	
+	@Builder(setterPrefix = "with")
+	public static Person of(String firstname, Character gender, float weight,
+			float height, LocalDate birthdate, Map<Character, String> phones,
+			Set<String> emails) {
+		Person person = new Person();
+		person.setFirstname(firstname);
+		person.setGender(gender);
+		person.setWeight(weight);
+		person.setHeight(height);
+		person.setBirthdate(birthdate);
+		person.setPhones(phones);
+		person.setEmails(emails);
+		return person;
+	}
+	
+	@Override
+	public String toString() {
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+				.append("name", getFirstname()).append("gender", getGender())
+				.append("BMI", Imc.imcByGender(this))
+				.append("age", getAgeWithSymbol()).append("phones", getPhones())
+				.append("emails", getEmails()).build();
 		
 	}
 	
@@ -254,4 +302,7 @@ public class Person implements Serializable {
 		personDiedIn(date);
 	}
 	
+	public String personIMC() {
+		return Imc.imcByGender(getWeight(), getHeight(), getGender());
+	}
 }

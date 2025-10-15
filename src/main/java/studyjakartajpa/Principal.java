@@ -1,7 +1,9 @@
 package studyjakartajpa;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Month;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +16,8 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.PersistenceUnit;
 import studyjakartajpa.model.Address;
 import studyjakartajpa.model.Person;
+import studyjakartajpa.model.Product;
+import studyjakartajpa.model.enums.ProductUnit;
 
 public class Principal {
 	
@@ -27,6 +31,8 @@ public class Principal {
 	public static void main(String[] args) {
 		
 		Person p1 = new Person("Jordan", 'M', LocalDate.of(1980, 3, 27));
+		p1.setWeight(80.5F);
+		p1.setHeight(1.81F);
 		p1.setPhone('H', "(11)4242-2323");
 		p1.setAddress(new Address(0, "123", "Main St.", "Apt. 4B", "New York",
 				"NY", "USA", "10001", true, p1));
@@ -34,6 +40,8 @@ public class Principal {
 		Person p2 = new Person();
 		p2.setFirstname("Anna");
 		p2.setGender('F');
+		p2.setWeight(62.8F);
+		p2.setHeight(1.52F);
 		p2.setBirthdate(LocalDate.of(1948, Month.NOVEMBER, 10));
 		p2.setPhone('M', "(11)97878-8787");
 		p2.setPhone('H', "(11)2233-3322");
@@ -50,19 +58,24 @@ public class Principal {
 		
 		p2.setAddress(a2);
 		
-		Person p3 = Person.of("Jhon", 'M', LocalDate.of(1982, 7, 3));
+		Person p3 = Person.of("Jack", 'M', LocalDate.of(1982, 7, 3));
+		p3.setWeight(89.8F);
+		p3.setHeight(1.78F);
 		p3.setPhones(Map.of('M', "(11)99999-8888", 'W', "(11)8888-7777"));
 		p3.setEmails("jhonjj@mail.com", "jjj@mail.com");
 		
-		Person p4 = Person.of("Bett", 'F', LocalDate.of(1988, 8, 24),
+		Person p4 = Person.of("Bett", 'F', 70.8F, 1.78F,
+				LocalDate.of(1988, 8, 24),
 				Map.of('M', "(11)97777-6666", 'W', "(11)2121-1122"));
 		p4.setEmail("nett9@mail.com");
+		p4.setAddress(Address.of("1486", "Buena Vista Dr", "Lake Buena Vista",
+				"Orlando", "FL", "USA", "32830", true, p4));
 		
 		Person p5 = Person.builder().withFirstname("Rony").withGender('M')
 				.withBirthdate(LocalDate.of(1950, 1, 5)).build();
 		p5.setPhones(Map.ofEntries(Map.entry('M', "(11)98989-9898"),
 				Map.entry('W', "(11)5555-4444")));
-		p5.setEmails(Set.of("rony123@mail.com","rony@mail.com"));
+		p5.setEmails(Set.of("rony123@mail.com", "rony@mail.com"));
 		
 		var a51 = Address.builder().withNumber("350").withStreet("5th Avenue")
 				.withCity("New York").withState("NY").withCountry("USA")
@@ -81,10 +94,33 @@ public class Principal {
 		persons.add(p4);
 		persons.add(p5);
 		
+		Product prd1 = new Product();
+		prd1.setTitle("Title 1");
+		prd1.setDescription("Description 1");
+		prd1.setDiscount(0.05F);
+		prd1.setUnitPrice(BigDecimal.valueOf(5.5));
+		prd1.setUnit(ProductUnit.UNITY);
+		prd1.setValidity(6, ChronoUnit.MONTHS);
+		
+		Product prd2 = Product.builder().withTitle("Title 2")
+				.withDescription("Description 2").withDiscount(0.1F)
+				.withUnitPrice(10.5).withUnit(ProductUnit.UNITY).build()
+				.setValidity(1, ChronoUnit.YEARS);
+		
+		Product prd3 = Product.of("Title 3", "Description 3", 0.15F, 15.5,
+				ProductUnit.UNITY);
+		prd3.setValidity(18, ChronoUnit.MONTHS);
+		
+		ArrayList<Product> products = new ArrayList<>();
+		products.add(prd1);
+		products.add(prd2);
+		products.add(prd3);
+		
 		try {
 			em.getTransaction().begin();
 			
 			persons.forEach(em::persist);
+			products.forEach(em::persist);
 			
 			em.getTransaction().commit();
 			

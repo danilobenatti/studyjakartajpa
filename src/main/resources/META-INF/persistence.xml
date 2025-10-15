@@ -12,8 +12,9 @@
 		<!-- Enables auto discovery of persistent classes, -->
 		<!-- otherwise they must be listed using <class> -->
 		<class>studyjakartajpa.model.Person</class>
+		<class>studyjakartajpa.model.Product</class>
 		<class>studyjakartajpa.model.Address</class>
-		<exclude-unlisted-classes>false</exclude-unlisted-classes>
+		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 
 		<properties>
 			<!-- database connection -->
