@@ -2,6 +2,9 @@ package studyjakartajpa.model;
 
 import java.io.Serializable;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -18,16 +21,14 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@ToString
 @Entity
-@Table(name = "tbl_addresses", catalog = "jpaforbeginners", schema = "public")
+@Table(name = "addresses", catalog = "jpaforbeginners", schema = "public")
 public class Address implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
@@ -40,33 +41,32 @@ public class Address implements Serializable {
 		generator = "addresses_seq_generator")
 	private long id;
 	
-	@Column(name = "col_number")
+	@Column(name = "number")
 	private String number;
 	
-	@Column(name = "col_street")
+	@Column(name = "street")
 	private String street;
 	
-	@Column(name = "col_unit")
+	@Column(name = "unit")
 	private String unit;
 	
-	@Column(name = "col_city")
+	@Column(name = "city")
 	private String city;
 	
-	@Column(name = "col_state")
+	@Column(name = "state")
 	private String state;
 	
-	@Column(name = "col_country")
+	@Column(name = "country")
 	private String country;
 	
-	@Column(name = "col_zipcode")
+	@Column(name = "zipcode")
 	private String zipCode;
 	
-	@Column(name = "col_isprincipal")
+	@Column(name = "isprincipal")
 	private boolean isPrincipal;
 	
-	@ToString.Exclude
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "person_id", nullable = false) 
+	@JoinColumn(name = "person_id", referencedColumnName = "id", nullable = false)
 	private Person person;
 	
 	@Builder(setterPrefix = "with")
@@ -84,5 +84,15 @@ public class Address implements Serializable {
 		address.setPrincipal(isPrincipal);
 		address.setPerson(person);
 		return address;
+	}
+	
+	@Override
+	public String toString() {
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+				.append("number", getNumber()).append("street", getStreet())
+				.append("unit", getUnit()).append("city", getCity())
+				.append("state", getState()).append("country", getCountry())
+				.append("zipCode", getZipCode())
+				.append("principal", isPrincipal()).build();
 	}
 }

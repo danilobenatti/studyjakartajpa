@@ -17,6 +17,7 @@ import jakarta.persistence.PersistenceUnit;
 import studyjakartajpa.model.Address;
 import studyjakartajpa.model.Person;
 import studyjakartajpa.model.Product;
+import studyjakartajpa.model.WishList;
 import studyjakartajpa.model.enums.ProductUnit;
 
 public class Principal {
@@ -34,7 +35,7 @@ public class Principal {
 		p1.setWeight(80.5F);
 		p1.setHeight(1.81F);
 		p1.setPhone('H', "(11)4242-2323");
-		p1.setAddress(new Address(0, "123", "Main St.", "Apt. 4B", "New York",
+		p1.setAddress(new Address(0, "123", "Main St.", "Apt.4B", "New York",
 				"NY", "USA", "10001", true, p1));
 		
 		Person p2 = new Person();
@@ -45,6 +46,8 @@ public class Principal {
 		p2.setBirthdate(LocalDate.of(1948, Month.NOVEMBER, 10));
 		p2.setPhone('M', "(11)97878-8787");
 		p2.setPhone('H', "(11)2233-3322");
+		
+		p1.setPartner(p2);
 		
 		Address a2 = new Address();
 		a2.setNumber("789");
@@ -77,13 +80,13 @@ public class Principal {
 				Map.entry('W', "(11)5555-4444")));
 		p5.setEmails(Set.of("rony123@mail.com", "rony@mail.com"));
 		
-		var a51 = Address.builder().withNumber("350").withStreet("5th Avenue")
-				.withCity("New York").withState("NY").withCountry("USA")
-				.withZipCode("10118").withPerson(p5).build();
+		Address a51 = Address.builder().withNumber("350")
+				.withStreet("5th Avenue").withCity("New York").withState("NY")
+				.withCountry("USA").withZipCode("10118").withPerson(p5).build();
 		a51.setPrincipal(false);
 		
-		var a52 = Address.of("233", "Paulista Avenue", "7th", "São Paulo", "SP",
-				"Brazil", "01310-100", true, p5);
+		Address a52 = Address.of("233", "Paulista Avenue", "7th", "São Paulo",
+				"SP", "Brazil", "01310-100", true, p5);
 		
 		p5.setAddresses(a51, a52);
 		
@@ -111,16 +114,28 @@ public class Principal {
 				ProductUnit.UNITY);
 		prd3.setValidity(18, ChronoUnit.MONTHS);
 		
-		ArrayList<Product> products = new ArrayList<>();
+		List<Product> products = new ArrayList<>();
 		products.add(prd1);
 		products.add(prd2);
 		products.add(prd3);
+		
+		WishList p4wishList = WishList.of("Market list", "Cleaning supplies",
+				p4, Set.of(prd1));
+		
+		WishList p5WishList = new WishList();
+		p5WishList.setTitle("Christmas list");
+		p5WishList.setDescription("Gifts for Christmas with the family");
+		p5WishList.setPerson(p5);
+		p5WishList.setProducts(Set.of(prd1, prd2, prd3));
+		
+		List<WishList> wishLists = List.of(p4wishList, p5WishList);
 		
 		try {
 			em.getTransaction().begin();
 			
 			persons.forEach(em::persist);
 			products.forEach(em::persist);
+			wishLists.forEach(em::persist);
 			
 			em.getTransaction().commit();
 			

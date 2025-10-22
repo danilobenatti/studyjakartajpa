@@ -9,15 +9,22 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.eclipse.persistence.annotations.CascadeOnDelete;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -34,31 +41,31 @@ import studyjakartajpa.model.enums.ProductUnit;
 @NoArgsConstructor
 @RequiredArgsConstructor
 @Entity
-@Table(name = "tbl_products", catalog = "jpaforbeginners", schema = "public")
+@Table(name = "products", catalog = "jpaforbeginners", schema = "public")
 public class Product implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	@Id
-	@GeneratedValue(generator = "products_seq_generator",
-		strategy = GenerationType.SEQUENCE)
 	@SequenceGenerator(catalog = "jpaforbeginners", schema = "public",
 		name = "products_seq_generator", sequenceName = "products_id_seq",
-		initialValue = 150, allocationSize = 50)
+		initialValue = 100, allocationSize = 50)
+	@GeneratedValue(strategy = GenerationType.SEQUENCE,
+		generator = "products_seq_generator")
 	private long id;
 	
 	@NonNull
-	@Column(name = "col_title", length = 150, nullable = false)
+	@Column(name = "title", length = 150, nullable = false)
 	private String title;
 	
 	@NonNull
-	@Column(name = "col_description", length = 255, nullable = false)
+	@Column(name = "description", length = 255, nullable = false)
 	private String description;
 	
 	@NonNull
-	@Column(name = "col_unitPrice", precision = 11, scale = 2, nullable = false)
+	@Column(name = "unitPrice", precision = 11, scale = 2, nullable = false)
 	private BigDecimal unitPrice = BigDecimal.ZERO;
 	
-	@Column(name = "col_unit", nullable = false)
+	@Column(name = "unit", nullable = false)
 	private byte unit = ProductUnit.UNITY.getCode();
 	
 	public ProductUnit getUnit() {
@@ -70,29 +77,33 @@ public class Product implements Serializable {
 		
 	}
 	
-	@Column(name = "col_discount", nullable = false,
+	@Column(name = "discount", nullable = false,
 		columnDefinition = "NUMERIC(3,2)")
 	private float discount = 0;
 	
-	@Column(name = "col_validity")
+	@Column(name = "validity")
 	private LocalDate validity;
 	
+	@CascadeOnDelete
+	@ManyToMany(mappedBy = "products", fetch = FetchType.LAZY)
+	private List<WishList> wishLists = new ArrayList<>();
+	
 	@Setter(value = AccessLevel.NONE)
-	@Column(name = "col_dateinsert", updatable = false,
-		columnDefinition = "timestamp with time zone")
+	@Column(name = "dateinsert", updatable = false,
+		columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateCreate;
 	
-	@jakarta.persistence.PrePersist
+	@PrePersist
 	protected void prePersist() {
 		this.dateCreate = LocalDateTime.now();
 	}
 	
 	@Setter(value = AccessLevel.NONE)
-	@Column(name = "col_dateupdate", insertable = false,
-		columnDefinition = "timestamp with time zone")
+	@Column(name = "dateupdate", insertable = false,
+		columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateUpdate;
 	
-	@jakarta.persistence.PreUpdate
+	@PreUpdate
 	protected void preUpdate() {
 		this.dateUpdate = LocalDateTime.now();
 	}
@@ -115,7 +126,7 @@ public class Product implements Serializable {
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
 				.append("title", getTitle())
 				.append("description", getDescription())
-				.append("end_price", formatedPrice())
+				.append("endPrice", formatedPrice())
 				.append("unit", getUnit().getValue())
 				.append("validity", getValidity()).build();
 	}

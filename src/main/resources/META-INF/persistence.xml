@@ -14,6 +14,7 @@
 		<class>studyjakartajpa.model.Person</class>
 		<class>studyjakartajpa.model.Product</class>
 		<class>studyjakartajpa.model.Address</class>
+		<class>studyjakartajpa.model.WishList</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 
 		<properties>
@@ -24,14 +25,16 @@
 			<property name="jakarta.persistence.jdbc.password" value="123456" />
 			<property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create" />
 			<property name="jakarta.persistence.sql-load-script-source" value="META-INF/initial-data.sql" />
-			<property name="jakarta.persistence.schema-generation.scripts.action" value="drop-and-create"/>
-			<property name="jakarta.persistence.schema-generation.scripts.create-target" value="create-schema.sql"/>
-			<property name="jakarta.persistence.schema-generation.scripts.drop-target" value="drop-schema.sql"/>
+			<property name="jakarta.persistence.schema-generation.scripts.action" value="drop-and-create" />
+			<property name="jakarta.persistence.schema-generation.scripts.create-target" value="create-schema.sql" />
+			<property name="jakarta.persistence.schema-generation.scripts.drop-target" value="drop-schema.sql" />
 
 			<property name="eclipselink.target-database" value="PostgreSQL" />
 			<property name="eclipselink.jdbc.native-sql" value="true" />
-			<property name="eclipselink.ddl-generation.output-mode" value="both"/>
+			<property name="eclipselink.ddl-generation.output-mode" value="both" />
 			<property name="eclipselink.application-location" value="./src/main/resources/ddl" />
+
+			<property name="eclipselink.foreign-key-on-delete-set-null" value="true" />
 
 			<!-- configuring batch writing -->
 			<property name="eclipselink.jdbc.batch-writing" value="jdbc" />

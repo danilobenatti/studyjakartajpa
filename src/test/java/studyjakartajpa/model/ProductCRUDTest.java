@@ -1,6 +1,7 @@
 package studyjakartajpa.model;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
@@ -34,10 +35,11 @@ class ProductCRUDTest extends EntityManagerTest {
 		em.getTransaction().commit();
 		
 		String qlString = """
-			select p from Product p where p.title like :name
+			select p from Product p
+			where lower(p.title) like lower(concat('%', :name, '%'))
 			""";
 		Query query = em.createQuery(qlString);
-		query.setParameter("name", '%' + "Include" + '%');
+		query.setParameter("name", "includ");
 		Product product = (Product) query.getSingleResult();
 		
 		System.out.println(product);
@@ -55,27 +57,51 @@ class ProductCRUDTest extends EntityManagerTest {
 		
 		Root<Product> root = cq.from(Product.class);
 		
-		cq.select(root).where(cb.equal(root.get(Product_.id), 100));
+		cq.select(root).where(cb.equal(root.get(Product_.title),
+				"Title Product Test Include"));
 		
 		Product product = em.createQuery(cq).getSingleResult();
 		
-		assertEquals("Title Product 1", product.getTitle());
-		assertEquals(4.95, product.getPriceWithDiscount().doubleValue());
+		assertEquals("Title Product Test Include", product.getTitle());
+		assertEquals(13.18, product.getPriceWithDiscount().doubleValue());
 	}
 	
 	@Test
 	@Order(3)
 	void updateProductTest() {
+		Product product = em.find(Product.class, 11L);
+		product.setTitle("Title Product 2 Update");
+		product.setDescription("Description Product 2 Update");
+		product.setDiscount(0.5F);
+		
+		em.getTransaction().begin();
+		em.merge(product);
+		em.getTransaction().commit();
+		
+		String qlString = """
+			select p from Product p where p.id = :id
+			""";
+		Product p = (Product) em.createQuery(qlString).setParameter("id", 11L)
+				.getSingleResult();
+		
+		System.out.println(p);
+		assertEquals(BigDecimal.valueOf(5.25), p.getPriceWithDiscount());
+	}
+	
+	@Test
+	@Order(4)
+	void updateProductTest2() {
 		CriteriaBuilder cb = em.getCriteriaBuilder();
 		
 		CriteriaUpdate<Product> update = cb.createCriteriaUpdate(Product.class);
 		
 		Root<Product> root = update.from(Product.class);
 		
-		update.set(Product_.title, "Title Product 2 Update");
+		update.set(Product_.title, "Title Product 2 Update2");
+		update.set(Product_.description, "Description Product 2 Update2");
 		update.set(Product_.discount, 0.5F);
 		
-		update.where(cb.equal(root.get(Product_.id), 101));
+		update.where(cb.equal(root.get(Product_.id), 11L));
 		
 		em.getTransaction().begin();
 		int i = em.createQuery(update).executeUpdate();
@@ -84,19 +110,20 @@ class ProductCRUDTest extends EntityManagerTest {
 		assertEquals(1, i);
 		assertEquals(BigDecimal.valueOf(5.25),
 				((Product) em
-						.createQuery("select p from Product p where p.id = 101")
+						.createQuery("select p from Product p where p.id = 11")
 						.getSingleResult()).getPriceWithDiscount());
 	}
 	
 	@Test
-	@Order(4)
+	@Order(5)
 	void deleteProductTest() {
-		Product product = em.find(Product.class, 100L);
+		Product product = em.find(Product.class, 10L);
 		System.out.println(product);
-		em.getTransaction().begin();
-		em.remove(product);
-		em.getTransaction().commit();
-		
-		assertNull(em.find(Product.class, 100L));
+		if (product != null) {
+			em.getTransaction().begin();
+			em.remove(product);
+			em.getTransaction().commit();
+		}
+		assertNull(em.find(Product.class, product.getId()));
 	}
 }

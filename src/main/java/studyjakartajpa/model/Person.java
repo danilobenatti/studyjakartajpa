@@ -26,12 +26,16 @@ import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -50,7 +54,7 @@ import studyjakartajpa.util.Imc;
 @RequiredArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
-@Table(name = "tbl_persons", catalog = "jpaforbeginners", schema = "public")
+@Table(name = "persons", catalog = "jpaforbeginners", schema = "public")
 public class Person implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
@@ -64,30 +68,43 @@ public class Person implements Serializable {
 	private long id;
 	
 	@NonNull
-	@Column(name = "col_firstname", nullable = false, length = 150)
+	@Column(name = "firstname", nullable = false, length = 150)
 	private String firstname;
 	
 	@NonNull
-	@Column(name = "col_gender", nullable = false)
+	@Column(name = "gender", nullable = false)
 	private Character gender;
 	
-	@Column(name = "col_weight", columnDefinition = "numeric(4,2)")
+	@Column(name = "weight", columnDefinition = "NUMERIC(4,2)")
 	private float weight;
 	
-	@Column(name = "col_height", columnDefinition = "numeric(3,2)")
+	@Column(name = "height", columnDefinition = "NUMERIC(3,2)")
 	private float height;
+	
+	/**
+	 * FOREIGN KEY (partner_id) REFERENCES public.persons(id) ON DELETE SET NULL
+	 **/
+	
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "partner_id", referencedColumnName = "id", nullable = true,
+		foreignKey = @ForeignKey(name = "FK_persons_partner_id",
+			foreignKeyDefinition = "FOREIGN KEY (partner_id) REFERENCES public.persons(ID) ON DELETE SET NULL"))
+	private Person partner;
+	
+	public void setPartner(Person person) {
+		this.partner = person;
+		person.partner = this;
+	}
 	
 	@PrivateOwned
 	@CascadeOnDelete
-	@Setter(value = AccessLevel.NONE)
 	@ElementCollection(fetch = FetchType.EAGER)
-	@CollectionTable(name = "tbl_persons_phones", catalog = "jpaforbeginners",
+	@CollectionTable(name = "persons_phones", catalog = "jpaforbeginners",
 		schema = "public",
-		joinColumns = @JoinColumn(name = "person_id", table = "tbl_persons",
-			referencedColumnName = "id"))
-	@MapKeyColumn(name = "col_type", columnDefinition = "char(1)",
-		nullable = false)
-	@Column(name = "col_number", length = 20, nullable = false)
+		joinColumns = @JoinColumn(name = "person_id", table = "persons",
+			referencedColumnName = "id", nullable = false))
+	@MapKeyColumn(name = "type", columnDefinition = "char(1)", nullable = false)
+	@Column(name = "number", length = 20, nullable = false)
 	private Map<Character, String> phones = new HashMap<>();
 	
 	public String setPhone(Character type, String number) {
@@ -115,7 +132,7 @@ public class Person implements Serializable {
 		
 	}
 	
-	public Address getPrincipalAddress() {
+	public Address getMainAddress() {
 		Optional<Address> address = this.addresses.stream()
 				.filter(Address::isPrincipal).findFirst();
 		if (address.isPresent())
@@ -126,9 +143,9 @@ public class Person implements Serializable {
 	@PrivateOwned
 	@CascadeOnDelete
 	@ElementCollection(fetch = FetchType.EAGER)
-	@CollectionTable(name = "tbl_persons_emails", catalog = "jpaforbeginners",
+	@CollectionTable(name = "persons_emails", catalog = "jpaforbeginners",
 		schema = "public", joinColumns = @JoinColumn(name = "person_id"))
-	@Column(name = "col_email", length = 150, nullable = false)
+	@Column(name = "email", length = 150, nullable = false)
 	private Set<String> emails = new HashSet<>();
 	
 	public void setEmail(String email) {
@@ -143,29 +160,34 @@ public class Person implements Serializable {
 		Set.of(email).forEach(this.emails::add);
 	}
 	
+	@CascadeOnDelete
+	@OneToMany(mappedBy = "person", fetch = FetchType.EAGER,
+		orphanRemoval = true, cascade = CascadeType.REMOVE)
+	private Set<WishList> wishLists = new HashSet<>();
+	
 	@NonNull
-	@Column(name = "col_birthday", nullable = false)
+	@Column(name = "birthday", nullable = false)
 	private LocalDate birthdate;
 	
-	@Column(name = "col_deathdate")
+	@Column(name = "deathdate")
 	private LocalDate deathdate;
 	
 	@Setter(value = AccessLevel.NONE)
-	@Column(name = "col_dateinsert", updatable = false,
-		columnDefinition = "timestamp with time zone")
+	@Column(name = "dateinsert", updatable = false,
+		columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateCreate;
 	
-	@jakarta.persistence.PrePersist
+	@PrePersist
 	protected void prePersist() {
 		this.dateCreate = LocalDateTime.now();
 	}
 	
 	@Setter(value = AccessLevel.NONE)
-	@Column(name = "col_dateupdate", insertable = false,
-		columnDefinition = "timestamp with time zone")
+	@Column(name = "dateupdate", insertable = false,
+		columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateUpdate;
 	
-	@jakarta.persistence.PreUpdate
+	@PreUpdate
 	protected void preUpdate() {
 		this.dateUpdate = LocalDateTime.now();
 	}
@@ -246,12 +268,19 @@ public class Person implements Serializable {
 	
 	@Override
 	public String toString() {
-		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("name", getFirstname()).append("gender", getGender())
-				.append("BMI", Imc.imcByGender(this))
-				.append("age", getAgeWithSymbol()).append("phones", getPhones())
-				.append("emails", getEmails()).build();
-		
+		ToStringBuilder builder = new ToStringBuilder(this,
+				ToStringStyle.SHORT_PREFIX_STYLE);
+		builder.append("name", getFirstname());
+		builder.append("gender", getGender());
+		builder.append("BMI", Imc.imcByGender(this));
+		builder.append("age", getAgeWithSymbol());
+		builder.append("phones", getPhones());
+		builder.append("emails", getEmails());
+		builder.append(getMainAddress());
+		if (this.partner != null) {
+			builder.append("partner", getPartner().getFirstname());
+		}
+		return builder.build();
 	}
 	
 	public boolean isAlive() {

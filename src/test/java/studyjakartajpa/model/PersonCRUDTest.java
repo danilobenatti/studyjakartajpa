@@ -35,6 +35,8 @@ class PersonCRUDTest extends EntityManagerTest {
 				LocalDate.of(1990, Month.JANUARY, 1));
 		person.setDeathdate(LocalDate.now());
 		
+		person.setPartner(em.find(Person.class, 12L));
+		
 		Address address = Address.builder().withStreet("Street Name")
 				.withNumber("10").withCity("City").withState("State")
 				.withCountry("Country").withZipCode("00000").withPerson(person)
@@ -55,6 +57,7 @@ class PersonCRUDTest extends EntityManagerTest {
 		
 		System.out.println(result);
 		Assertions.assertEquals("Person Include Test", result.getFirstname());
+		Assertions.assertEquals("Michael", result.getPartner().getFirstname());
 	}
 	
 	@Test
@@ -147,7 +150,7 @@ class PersonCRUDTest extends EntityManagerTest {
 		
 		Root<Person> root = update.from(Person.class);
 		
-		update.set(root.get(Person_.firstname), "Jhon Update");
+		update.set(root.get(Person_.firstname), "John Update");
 		update.set(root.get(Person_.deathdate), LocalDate.now());
 		
 		Predicate like = cb.like(root.get(Person_.firstname), "John");
@@ -172,7 +175,7 @@ class PersonCRUDTest extends EntityManagerTest {
 			em.remove(person);
 			em.getTransaction().commit();
 		}
-		Assertions.assertNull(em.find(Person.class, 12L));
+		Assertions.assertNull(em.find(Person.class, person.getId()));
 	}
 	
 }
