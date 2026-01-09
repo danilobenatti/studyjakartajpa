@@ -10,41 +10,39 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.project.sourceRoots.warningsDisabled>true</maven.project.sourceRoots.warningsDisabled>
 		<java.version>21</java.version>
+		<jakarta.version>3.2.0</jakarta.version>
 		<eclipselink.version>4.0.8</eclipselink.version>
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<version>42.7.7</version>
-		</dependency>
-		<dependency>
-			<groupId>org.eclipse.persistence</groupId>
-			<artifactId>eclipselink</artifactId>
-			<version>${eclipselink.version}</version>
-			<scope>compile</scope>
+			<groupId>jakarta.persistence</groupId>
+			<artifactId>jakarta.persistence-api</artifactId>
+			<version>${jakarta.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.persistence</groupId>
 			<artifactId>org.eclipse.persistence.jpa</artifactId>
 			<version>${eclipselink.version}</version>
-			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.eclipse.persistence</groupId>
 			<artifactId>org.eclipse.persistence.jpa.modelgen.processor</artifactId>
 			<version>${eclipselink.version}</version>
-			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>42.7.8</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.20.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<version>1.18.42</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>3.19.0</version>
 		</dependency>
 	</dependencies>
 	<build>
@@ -59,12 +57,14 @@
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.eclipse.persistence</groupId>
-							<artifactId>org.eclipse.persistence.jpa.modelgen.processor</artifactId>
+							<artifactId>
+								org.eclipse.persistence.jpa.modelgen.processor</artifactId>
 							<version>${eclipselink.version}</version>
 						</path>
 					</annotationProcessorPaths>
 					<compilerArgs>
-						<arg>-Aeclipselink.persistencexml=${project.basedir}/src/main/resources/META-INF/persistence.xml</arg>
+						<arg>
+							-Aeclipselink.persistencexml=${project.basedir}/src/main/resources/META-INF/persistence.xml</arg>
 					</compilerArgs>
 				</configuration>
 			</plugin>

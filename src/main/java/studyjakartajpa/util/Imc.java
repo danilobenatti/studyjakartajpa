@@ -15,7 +15,7 @@ import studyjakartajpa.model.Person;
  */
 public class Imc {
 	
-	static NumberFormat nf = NumberFormat.getInstance(Locale.ROOT);
+	static NumberFormat nf = NumberFormat.getInstance(Locale.getDefault());
 	
 	private Imc() {
 	}

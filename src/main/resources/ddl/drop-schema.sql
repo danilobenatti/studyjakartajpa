@@ -1,6 +1,9 @@
 ALTER TABLE jpaforbeginners.public.persons DROP CONSTRAINT FK_persons_partner_id
 ALTER TABLE jpaforbeginners.public.addresses DROP CONSTRAINT FK_addresses_person_id
 ALTER TABLE jpaforbeginners.public.wishlists DROP CONSTRAINT FK_wishlists_person_id
+ALTER TABLE jpaforbeginners.public.orders DROP CONSTRAINT FK_orders_person_id
+ALTER TABLE jpaforbeginners.public.orderitems DROP CONSTRAINT FK_orderitems_product_id
+ALTER TABLE jpaforbeginners.public.orderitems DROP CONSTRAINT FK_orderitems_order_id
 ALTER TABLE jpaforbeginners.public.persons_emails DROP CONSTRAINT FK_persons_emails_person_id
 ALTER TABLE jpaforbeginners.public.persons_phones DROP CONSTRAINT FK_persons_phones_person_id
 ALTER TABLE jpaforbeginners.public.wishlists_products DROP CONSTRAINT FK_wishlists_products_product_id
@@ -9,10 +12,13 @@ DROP TABLE jpaforbeginners.public.persons CASCADE
 DROP TABLE jpaforbeginners.public.products CASCADE
 DROP TABLE jpaforbeginners.public.addresses CASCADE
 DROP TABLE jpaforbeginners.public.wishlists CASCADE
+DROP TABLE jpaforbeginners.public.orders CASCADE
+DROP TABLE jpaforbeginners.public.orderitems CASCADE
 DROP TABLE jpaforbeginners.public.persons_emails CASCADE
 DROP TABLE jpaforbeginners.public.persons_phones CASCADE
 DROP TABLE jpaforbeginners.public.wishlists_products CASCADE
-DROP SEQUENCE jpaforbeginners.public.wishlists_id_seq
+DROP SEQUENCE jpaforbeginners.public.orders_id_seq
 DROP SEQUENCE jpaforbeginners.public.products_id_seq
 DROP SEQUENCE jpaforbeginners.public.persons_id_seq
 DROP SEQUENCE jpaforbeginners.public.addresses_id_seq
+DROP SEQUENCE jpaforbeginners.public.wishlists_id_seq

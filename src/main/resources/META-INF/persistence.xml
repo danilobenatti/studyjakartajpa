@@ -8,13 +8,15 @@
 		<!-- <non-jta-data-source></non-jta-data-source> -->
 		<!-- By default your mappings can be defined in orm.xml file, -->
 		<!-- which is discovered automatically. -->
-		<!-- <mapping-file>META-INF/orm.xml</mapping-file> -->
+		<mapping-file>META-INF/orm.xml</mapping-file>
 		<!-- Enables auto discovery of persistent classes, -->
 		<!-- otherwise they must be listed using <class> -->
 		<class>studyjakartajpa.model.Person</class>
 		<class>studyjakartajpa.model.Product</class>
 		<class>studyjakartajpa.model.Address</class>
 		<class>studyjakartajpa.model.WishList</class>
+		<class>studyjakartajpa.model.Order</class>
+		<class>studyjakartajpa.model.OrderItem</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 
 		<properties>
@@ -29,19 +31,22 @@
 			<property name="jakarta.persistence.schema-generation.scripts.create-target" value="create-schema.sql" />
 			<property name="jakarta.persistence.schema-generation.scripts.drop-target" value="drop-schema.sql" />
 
-			<property name="eclipselink.target-database" value="PostgreSQL" />
+			<property name="eclipselink.target-database" value="org.eclipse.persistence.platform.database.PostgreSQLPlatform" />
 			<property name="eclipselink.jdbc.native-sql" value="true" />
 			<property name="eclipselink.ddl-generation.output-mode" value="both" />
 			<property name="eclipselink.application-location" value="./src/main/resources/ddl" />
-
 			<property name="eclipselink.foreign-key-on-delete-set-null" value="true" />
+
+			<property name="eclipselink.jdbc.bind-parameters" value="true" />
+			<property name="eclipselink.jdbc.fetch-size" value="50" />
+			<property name="eclipselink.jdbc.uppercase-columns" value="true" />
 
 			<!-- configuring batch writing -->
 			<property name="eclipselink.jdbc.batch-writing" value="jdbc" />
 			<property name="eclipselink.jdbc.batch-writing.size" value="50" />
 
 			<!-- configure logging -->
-			<property name="eclipselink.logging.level" value="FINER" />
+			<property name="eclipselink.logging.level" value="FINE" />
 			<property name="eclipselink.logging.level.sql" value="FINEST" />
 			<property name="eclipselink.logging.parameters" value="true" />
 			<property name="eclipselink.logging.timestamp" value="true" />

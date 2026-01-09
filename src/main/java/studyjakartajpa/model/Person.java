@@ -32,6 +32,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.NamedNativeQuery;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
@@ -55,6 +56,9 @@ import studyjakartajpa.util.Imc;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "persons", catalog = "jpaforbeginners", schema = "public")
+@NamedNativeQuery(name = "Persons.findAllLive", query = """
+	select * from persons p where p.deathdate is null limit ?1 offset ?2
+	""", resultClass = Person.class)
 public class Person implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
@@ -81,12 +85,9 @@ public class Person implements Serializable {
 	@Column(name = "height", columnDefinition = "NUMERIC(3,2)")
 	private float height;
 	
-	/**
-	 * FOREIGN KEY (partner_id) REFERENCES public.persons(id) ON DELETE SET NULL
-	 **/
-	
-	@OneToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "partner_id", referencedColumnName = "id", nullable = true,
+	@OneToOne
+	@JoinColumn(name = "partner_id", referencedColumnName = "id",
+		nullable = true,
 		foreignKey = @ForeignKey(name = "FK_persons_partner_id",
 			foreignKeyDefinition = "FOREIGN KEY (partner_id) REFERENCES public.persons(ID) ON DELETE SET NULL"))
 	private Person partner;
@@ -98,7 +99,7 @@ public class Person implements Serializable {
 	
 	@PrivateOwned
 	@CascadeOnDelete
-	@ElementCollection(fetch = FetchType.EAGER)
+	@ElementCollection(fetch = FetchType.LAZY)
 	@CollectionTable(name = "persons_phones", catalog = "jpaforbeginners",
 		schema = "public",
 		joinColumns = @JoinColumn(name = "person_id", table = "persons",
@@ -165,8 +166,15 @@ public class Person implements Serializable {
 		orphanRemoval = true, cascade = CascadeType.REMOVE)
 	private Set<WishList> wishLists = new HashSet<>();
 	
+	@OneToMany(mappedBy = "person", fetch = FetchType.LAZY)
+	private List<Order> orders = new ArrayList<>();
+	
+	public void setOrder(Order order) {
+		this.orders.add(order);
+	}
+	
 	@NonNull
-	@Column(name = "birthday", nullable = false)
+	@Column(name = "birthdate", nullable = false)
 	private LocalDate birthdate;
 	
 	@Column(name = "deathdate")
@@ -178,17 +186,16 @@ public class Person implements Serializable {
 	private LocalDateTime dateCreate;
 	
 	@PrePersist
-	protected void prePersist() {
+	protected void whenPersist() {
 		this.dateCreate = LocalDateTime.now();
 	}
 	
 	@Setter(value = AccessLevel.NONE)
-	@Column(name = "dateupdate", insertable = false,
-		columnDefinition = "TIMESTAMP WITH TIME ZONE")
+	@Column(name = "dateupdate", columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateUpdate;
 	
 	@PreUpdate
-	protected void preUpdate() {
+	protected void whenUpdate() {
 		this.dateUpdate = LocalDateTime.now();
 	}
 	
@@ -274,10 +281,13 @@ public class Person implements Serializable {
 		builder.append("gender", getGender());
 		builder.append("BMI", Imc.imcByGender(this));
 		builder.append("age", getAgeWithSymbol());
-		builder.append("phones", getPhones());
-		builder.append("emails", getEmails());
-		builder.append(getMainAddress());
-		if (this.partner != null) {
+		if (!getPhones().isEmpty())
+			builder.append("phones", getPhones());
+		if (!getEmails().isEmpty())
+			builder.append("emails", getEmails());
+		if (getMainAddress() != null)
+			builder.append(getMainAddress());
+		if (getPartner() != null) {
 			builder.append("partner", getPartner().getFirstname());
 		}
 		return builder.build();

@@ -7,7 +7,6 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -65,8 +64,9 @@ public class Address implements Serializable {
 	@Column(name = "isprincipal")
 	private boolean isPrincipal;
 	
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "person_id", referencedColumnName = "id", nullable = false)
+	@ManyToOne
+	@JoinColumn(name = "person_id", referencedColumnName = "id",
+		nullable = false)
 	private Person person;
 	
 	@Builder(setterPrefix = "with")

@@ -1,10 +1,7 @@
 package studyjakartajpa;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.Month;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,58 +10,44 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.PersistenceContextType;
 import jakarta.persistence.PersistenceUnit;
 import studyjakartajpa.model.Address;
+import studyjakartajpa.model.Order;
+import studyjakartajpa.model.OrderItem;
 import studyjakartajpa.model.Person;
 import studyjakartajpa.model.Product;
 import studyjakartajpa.model.WishList;
+import studyjakartajpa.model.enums.OrderStatus;
 import studyjakartajpa.model.enums.ProductUnit;
 
 public class Principal {
 	
-	@PersistenceUnit
+	@PersistenceUnit(unitName = "persistence-unit")
 	private static EntityManagerFactory emf = Persistence
 			.createEntityManagerFactory("persistence-unit");
 	
-	@PersistenceContext
+	@PersistenceContext(type = PersistenceContextType.TRANSACTION)
 	private static EntityManager em = emf.createEntityManager();
 	
 	public static void main(String[] args) {
 		
-		Person p1 = new Person("Jordan", 'M', LocalDate.of(1980, 3, 27));
-		p1.setWeight(80.5F);
-		p1.setHeight(1.81F);
-		p1.setPhone('H', "(11)4242-2323");
-		p1.setAddress(new Address(0, "123", "Main St.", "Apt.4B", "New York",
-				"NY", "USA", "10001", true, p1));
+		Person p1 = Person.of("Jordan", 'M', 80.5F, 1.81F,
+				LocalDate.of(1980, 3, 27), Map.of('H', "(11)4242-2323"));
+		p1.setAddress(Address.of("123", "Main St.", "Apt.4B", "New York", "NY",
+				"USA", "10001", true, p1));
 		
-		Person p2 = new Person();
-		p2.setFirstname("Anna");
-		p2.setGender('F');
-		p2.setWeight(62.8F);
-		p2.setHeight(1.52F);
-		p2.setBirthdate(LocalDate.of(1948, Month.NOVEMBER, 10));
-		p2.setPhone('M', "(11)97878-8787");
-		p2.setPhone('H', "(11)2233-3322");
+		Person p2 = Person.of("Anna", 'F', 62.8F, 1.52F,
+				LocalDate.of(1948, 11, 10),
+				Map.of('M', "(11)97878-8787", 'H', "(11)2233-s3322"));
+		p2.setAddress(Address.of("789", "Elm St.", null, "Boston", "MA", "USA",
+				"02110", true, p2));
 		
 		p1.setPartner(p2);
 		
-		Address a2 = new Address();
-		a2.setNumber("789");
-		a2.setStreet("Elm St.");
-		a2.setCity("Boston");
-		a2.setState("MA");
-		a2.setCountry("USA");
-		a2.setZipCode("02110");
-		a2.setPrincipal(true);
-		a2.setPerson(p2);
-		
-		p2.setAddress(a2);
-		
-		Person p3 = Person.of("Jack", 'M', LocalDate.of(1982, 7, 3));
-		p3.setWeight(89.8F);
-		p3.setHeight(1.78F);
-		p3.setPhones(Map.of('M', "(11)99999-8888", 'W', "(11)8888-7777"));
+		Person p3 = Person.of("Jack", 'M', 89.8F, 1.78F,
+				LocalDate.of(1982, 7, 3),
+				Map.of('M', "(11)99999-8888", 'W', "(11)8888-7777"));
 		p3.setEmails("jhonjj@mail.com", "jjj@mail.com");
 		
 		Person p4 = Person.of("Bett", 'F', 70.8F, 1.78F,
@@ -74,61 +57,54 @@ public class Principal {
 		p4.setAddress(Address.of("1486", "Buena Vista Dr", "Lake Buena Vista",
 				"Orlando", "FL", "USA", "32830", true, p4));
 		
-		Person p5 = Person.builder().withFirstname("Rony").withGender('M')
-				.withBirthdate(LocalDate.of(1950, 1, 5)).build();
-		p5.setPhones(Map.ofEntries(Map.entry('M', "(11)98989-9898"),
-				Map.entry('W', "(11)5555-4444")));
-		p5.setEmails(Set.of("rony123@mail.com", "rony@mail.com"));
+		Person p5 = Person.of("Rony", 'M', 0, 0, LocalDate.of(1950, 1, 5),
+				Map.ofEntries(Map.entry('M', "(11)98989-9898"),
+						Map.entry('W', "(11)5555-4444")),
+				Set.of("rony123@mail.com", "rony@mail.com"));
 		
-		Address a51 = Address.builder().withNumber("350")
-				.withStreet("5th Avenue").withCity("New York").withState("NY")
-				.withCountry("USA").withZipCode("10118").withPerson(p5).build();
-		a51.setPrincipal(false);
+		Address a51 = Address.of("350", "5th Avenue", null, "New York", "NY",
+				"USA", "10118", false, p5);
 		
 		Address a52 = Address.of("233", "Paulista Avenue", "7th", "São Paulo",
 				"SP", "Brazil", "01310-100", true, p5);
 		
 		p5.setAddresses(a51, a52);
 		
-		List<Person> persons = new ArrayList<>();
-		persons.add(p1);
-		persons.add(p2);
-		persons.add(p3);
-		persons.add(p4);
-		persons.add(p5);
+		List<Person> persons = List.of(p1, p2, p3, p4, p5);
 		
-		Product prd1 = new Product();
-		prd1.setTitle("Title 1");
-		prd1.setDescription("Description 1");
-		prd1.setDiscount(0.05F);
-		prd1.setUnitPrice(BigDecimal.valueOf(5.5));
-		prd1.setUnit(ProductUnit.UNITY);
-		prd1.setValidity(6, ChronoUnit.MONTHS);
+		Product prd1 = Product
+				.of("Title 1", "Description 1", 0.05F, 5.5, ProductUnit.UNITY)
+				.setValidity(6, ChronoUnit.MONTHS);
 		
-		Product prd2 = Product.builder().withTitle("Title 2")
-				.withDescription("Description 2").withDiscount(0.1F)
-				.withUnitPrice(10.5).withUnit(ProductUnit.UNITY).build()
+		Product prd2 = Product
+				.of("Title 2", "Description 2", 0.1F, 10.5, ProductUnit.UNITY)
 				.setValidity(1, ChronoUnit.YEARS);
 		
-		Product prd3 = Product.of("Title 3", "Description 3", 0.15F, 15.5,
-				ProductUnit.UNITY);
-		prd3.setValidity(18, ChronoUnit.MONTHS);
+		Product prd3 = Product
+				.of("Title 3", "Description 3", 0.15F, 15.5, ProductUnit.UNITY)
+				.setValidity(18, ChronoUnit.MONTHS);
 		
-		List<Product> products = new ArrayList<>();
-		products.add(prd1);
-		products.add(prd2);
-		products.add(prd3);
+		List<Product> products = List.of(prd1, prd2, prd3);
 		
-		WishList p4wishList = WishList.of("Market list", "Cleaning supplies",
-				p4, Set.of(prd1));
+		WishList p4wl = WishList.of("Market list", "Cleaning supplies", p4,
+				Set.of(prd1));
 		
-		WishList p5WishList = new WishList();
-		p5WishList.setTitle("Christmas list");
-		p5WishList.setDescription("Gifts for Christmas with the family");
-		p5WishList.setPerson(p5);
-		p5WishList.setProducts(Set.of(prd1, prd2, prd3));
+		WishList p5wl = WishList.of("Christmas list", "Christmas gifts family",
+				p5, Set.of(prd1, prd2, prd3));
 		
-		List<WishList> wishLists = List.of(p4wishList, p5WishList);
+		List<WishList> wishLists = List.of(p4wl, p5wl);
+		
+		Order o1 = Order.of(LocalDate.now().plusDays(40), p5, 0.05F,
+				OrderStatus.WAITING); // $37.30 desc. 5% = $35.43
+		p5.setOrder(o1);
+		
+		OrderItem i1 = OrderItem.of(o1, prd1, 1); // $5.50 - 5% = $5.22
+		
+		OrderItem i2 = OrderItem.of(o1, prd2, 2); // ($10.50 - 10%) x 2 = $18.90
+		
+		OrderItem i3 = OrderItem.of(o1, prd3, 1); // ($15.50 - 15%) x 2 = $13.18
+		
+		o1.setOrderItems(i1, i2, i3);
 		
 		try {
 			em.getTransaction().begin();
@@ -136,6 +112,7 @@ public class Principal {
 			persons.forEach(em::persist);
 			products.forEach(em::persist);
 			wishLists.forEach(em::persist);
+			em.persist(o1);
 			
 			em.getTransaction().commit();
 			

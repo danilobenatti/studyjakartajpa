@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -67,7 +68,7 @@ public class WishList implements Serializable {
 	private LocalDateTime dateCreate;
 	
 	@PrePersist
-	protected void prePersist() {
+	protected void whenPersist() {
 		this.dateCreate = LocalDateTime.now();
 	}
 	
@@ -77,11 +78,11 @@ public class WishList implements Serializable {
 	private LocalDateTime dateUpdate;
 	
 	@PreUpdate
-	protected void preUpdate() {
+	protected void whenUpdate() {
 		this.dateUpdate = LocalDateTime.now();
 	}
 	
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne
 	@JoinColumn(name = "person_id", nullable = false)
 	private Person person;
 	
@@ -99,6 +100,10 @@ public class WishList implements Serializable {
 	}
 	
 	public void setProducts(Set<Product> products) {
+		this.products.addAll(products);
+	}
+	
+	public void setProducts(List<Product> products) {
 		this.products.addAll(products);
 	}
 	
@@ -130,14 +135,13 @@ public class WishList implements Serializable {
 	public String toString() {
 		List<String> productsList = getProducts().stream()
 				.map(Product::getTitle).sorted().collect(Collectors.toList());
-		
-		ToStringBuilder builder = new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE);
-		builder.append("title", getTitle());
-		builder.append("description", getDescription());
-		builder.append("person", getPerson().getFirstname());
-		builder.append("total", NumberFormat.getCurrencyInstance().format(getPriceTotal()));
-		builder.append("products", productsList);
-		return builder.build();
+		NumberFormat cf = NumberFormat.getCurrencyInstance(Locale.getDefault());
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+				.append("title", getTitle())
+				.append("description", getDescription())
+				.append("person", getPerson().getFirstname())
+				.append("total", cf.format(getPriceTotal()))
+				.append("products", productsList).build();
 	}
 	
 	public double getPriceTotal() {

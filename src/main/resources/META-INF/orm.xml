@@ -1,4 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-mappings version="3.2" xmlns="https://jakarta.ee/xml/ns/persistence/orm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence/orm https://jakarta.ee/xml/ns/persistence/orm/orm_3_2.xsd">
+	<named-query name="Persons.withPartners">
+		<query>select p from Person p where p.partner is not null</query>
+	</named-query>
+	<named-query name="Persons.greaterOrEqualtoAge">
+		<query>select p
+			from Person p 
+			where p.deathdate is null 
+			and (extract(year from current_date) - extract(year from p.birthdate)) >= :age
+		</query>
+	</named-query>
+	<named-query name="Persons.withPhoners">
+		<query>select distinct p from Person p inner join p.phones pp</query>
+	</named-query>
+	<named-query name="Persons.withEmails">
+		<query>select distinct p from Person p inner join p.emails pe</query>
+	</named-query>
+	<named-native-query name="Orders.AvgMonthly" result-set-mapping="OrderSaleMapping">
+		<description>Monthly average of order ​​in a specific year and specific status.</description>
+		<query>
+			select
+				extract(year from o.billingdate) as year,
+				extract(month from o.billingdate) as month,
+				round(avg(o.total), 2) as average,
+				count(o.id) as counter,
+				o.status as status
+			from orders as o
+			where extract(year from o.billingdate) = ?1 and o.status in(?2)
+			group by year, month, status
+			order by month asc
+		</query>
+	</named-native-query>
+	<sql-result-set-mapping name="OrderSaleMapping">
+		<constructor-result target-class="studyjakartajpa.model.balance.OrderSale">
+			<column name="year" class="java.lang.Integer" />
+			<column name="month" class="java.lang.Integer" />
+			<column name="average" class="java.math.BigDecimal" />
+			<column name="counter" class="java.lang.Long" />
+			<column name="status" class="java.lang.Byte" />
+		</constructor-result>
+	</sql-result-set-mapping>
 </entity-mappings>
