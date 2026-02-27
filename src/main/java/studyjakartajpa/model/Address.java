@@ -69,7 +69,7 @@ public class Address implements Serializable {
 		nullable = false)
 	private Person person;
 	
-	@Builder(setterPrefix = "with")
+	@Builder(builderMethodName = "maker", buildMethodName = "done")
 	public static Address of(String number, String street, String unit,
 			String city, String state, String country, String zipCode,
 			boolean isPrincipal, Person person) {
@@ -88,11 +88,15 @@ public class Address implements Serializable {
 	
 	@Override
 	public String toString() {
-		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("number", getNumber()).append("street", getStreet())
-				.append("unit", getUnit()).append("city", getCity())
-				.append("state", getState()).append("country", getCountry())
-				.append("zipCode", getZipCode())
-				.append("principal", isPrincipal()).build();
+		var sb = new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE);
+		sb.append("number", getNumber());
+		sb.append("street", getStreet());
+		sb.append("unit", getUnit());
+		sb.append("city", getCity());
+		sb.append("state", getState());
+		sb.append("country", getCountry());
+		sb.append("zipCode", getZipCode());
+		sb.append("principal", isPrincipal());
+		return sb.build();
 	}
 }

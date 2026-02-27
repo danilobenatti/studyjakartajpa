@@ -4,19 +4,18 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -25,8 +24,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -43,9 +40,14 @@ import lombok.Setter;
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
+@EntityListeners(value = { AuditListener.class })
 @Table(name = "wishlists", catalog = "jpaforbeginners", schema = "public")
 public class WishList implements Serializable {
 	private static final long serialVersionUID = 1L;
+	
+	static Locale locale = Locale.getDefault();
+	
+	static final NumberFormat CF = NumberFormat.getCurrencyInstance(locale);
 	
 	@Id
 	@EqualsAndHashCode.Include
@@ -62,25 +64,15 @@ public class WishList implements Serializable {
 	@Column(name = "description")
 	private String description;
 	
-	@Setter(value = AccessLevel.NONE)
+	@Setter(value = AccessLevel.PROTECTED)
 	@Column(name = "dateinsert", updatable = false,
 		columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateCreate;
 	
-	@PrePersist
-	protected void whenPersist() {
-		this.dateCreate = LocalDateTime.now();
-	}
-	
-	@Setter(value = AccessLevel.NONE)
+	@Setter(value = AccessLevel.PROTECTED)
 	@Column(name = "dateupdate", insertable = false,
 		columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateUpdate;
-	
-	@PreUpdate
-	protected void whenUpdate() {
-		this.dateUpdate = LocalDateTime.now();
-	}
 	
 	@ManyToOne
 	@JoinColumn(name = "person_id", nullable = false)
@@ -108,7 +100,7 @@ public class WishList implements Serializable {
 	}
 	
 	public void setProducts(Product... products) {
-		Arrays.asList(products).forEach(this.products::add);
+		Set.of(products).forEach(this.products::add);
 	}
 	
 	@Builder(setterPrefix = "with")
@@ -131,26 +123,36 @@ public class WishList implements Serializable {
 		return wishList;
 	}
 	
-	@Override
-	public String toString() {
-		List<String> productsList = getProducts().stream()
-				.map(Product::getTitle).sorted().collect(Collectors.toList());
-		NumberFormat cf = NumberFormat.getCurrencyInstance(Locale.getDefault());
-		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("title", getTitle())
-				.append("description", getDescription())
-				.append("person", getPerson().getFirstname())
-				.append("total", cf.format(getPriceTotal()))
-				.append("products", productsList).build();
+	@Builder(setterPrefix = "with")
+	public static WishList of(String title, String description, Person person,
+			Product... products) {
+		WishList wishList = new WishList();
+		wishList.setTitle(title);
+		wishList.setDescription(description);
+		wishList.setPerson(person);
+		wishList.setProducts(products);
+		return wishList;
 	}
 	
-	public double getPriceTotal() {
-		Optional<BigDecimal> total = this.products.stream()
+	@Override
+	public String toString() {
+		List<String> listProducts = getProducts().stream()
+				.map(Product::getProductInfo).sorted().toList();
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
+				.append("person", this.getPerson().getFirstname())
+				.append("title", this.getTitle())
+				.append("description", this.getDescription())
+				.append("total", CF.format(this.getPriceTotal()))
+				.append("products", listProducts).build();
+	}
+	
+	public BigDecimal getPriceTotal() {
+		Optional<BigDecimal> total = this.getProducts().stream()
 				.map(Product::getPriceWithDiscount).reduce(BigDecimal::add);
 		if (total.isPresent()) {
-			return total.get().doubleValue();
+			return total.get();
 		} else {
-			return BigDecimal.ZERO.doubleValue();
+			return BigDecimal.ZERO;
 		}
 	}
 }

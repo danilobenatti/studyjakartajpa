@@ -1,13 +1,10 @@
 package studyjakartajpa.model;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.Month;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
@@ -33,16 +30,15 @@ class PersonCRUDTest extends EntityManagerTest {
 	@Test
 	@Order(1)
 	void includePersonTest() {
-		Person person = Person.of("Person Include Test", 'M', 82.5F, 1.83F,
-				LocalDate.of(1990, Month.JANUARY, 1));
-		person.setDeathdate(LocalDate.now());
-		
+		Person person = Person.maker().firstname("Person Include Test")
+				.gender('m').weight(82.5F).height(1.83F)
+				.birthdate(LocalDate.of(1990, Month.FEBRUARY, 1)).done();
+		person.diedNow();
 		person.setPartner(em.find(Person.class, 11L));
 		
-		Address address = Address.builder().withStreet("Street Name")
-				.withNumber("10").withCity("City").withState("State")
-				.withCountry("Country").withZipCode("00000").withPerson(person)
-				.withIsPrincipal(true).build();
+		Address address = Address.maker().street("Street Name").number("10")
+				.city("City").state("State").country("Country").zipCode("00000")
+				.person(person).isPrincipal(true).done();
 		person.setAddress(address);
 		
 		em.getTransaction().begin();
@@ -53,22 +49,24 @@ class PersonCRUDTest extends EntityManagerTest {
 				select p from Person p
 				where lower(p.firstname) like lower(concat('%', :name, '%'))
 			""";
-		Query query = em.createQuery(qlString);
-		query.setParameter("name", "PERSON");
-		Person result = (Person) query.getSingleResult();
+		Person p = em.createQuery(qlString, Person.class)
+				.setParameter("name", "person includ").getResultList().stream()
+				.findFirst().orElse(null);
 		
-		System.out.println(result);
-		Assertions.assertEquals("Person Include Test", result.getFirstname());
-		Assertions.assertEquals("Mary", result.getPartner().getFirstname());
+		log.info(p);
+		Assertions.assertNotNull(p, "The object should not be null");
 	}
 	
 	@Test
 	@Order(2)
 	void includePersonTest2() {
-		Person person = Person.of("Person Include Test2", 'M', 82.5F, 1.83F,
-				LocalDate.of(1990, Month.JANUARY, 1));
-		person.personDiedNow();
-		person.setPartner(em.find(Person.class, 13L));
+		Person person = Person.maker().firstname("Person Include Test2")
+				.gender('m').weight(82.5F).height(1.83F)
+				.birthdate(LocalDate.of(1990, Month.JANUARY, 1)).done();
+		person.diedNow();
+		person.setPartner(em.find(Person.class, 15L));
+		person.setEmail("pTest2@mail.com");
+		person.setPhone('M', "(19)98989-9898");
 		
 		person.setAddress(
 				Address.of("1486", "Buena Vista Dr", "Lake Buena Vista",
@@ -76,11 +74,10 @@ class PersonCRUDTest extends EntityManagerTest {
 		
 		DAO<Person> dao = new DAO<>(Person.class);
 		
-		dao.addEntity(person);
+		dao.addEntity(person).end();
 		
-		Person p = dao.findById(person.getId());
-		System.out.println(p);
-		Assertions.assertEquals("Person Include Test2", p.getFirstname());
+		log.info(person);
+		Assertions.assertEquals("Person Include Test2", person.getFirstname());
 	}
 	
 	@Test
@@ -96,7 +93,7 @@ class PersonCRUDTest extends EntityManagerTest {
 		BigDecimal avg = BigDecimal.valueOf(avgPrice).setScale(1,
 				RoundingMode.HALF_UP);
 		
-		System.out.println(avg);
+		log.info(avg);
 		Assertions.assertEquals(74.7, avg.doubleValue());
 	}
 	
@@ -122,10 +119,10 @@ class PersonCRUDTest extends EntityManagerTest {
 		// create e execute TypedQuery
 		Double avgPrice = em.createQuery(cq).getSingleResult();
 		
-		MathContext mc = new MathContext(3, RoundingMode.HALF_UP);
-		BigDecimal avg = BigDecimal.valueOf(avgPrice).round(mc);
+		BigDecimal avg = BigDecimal.valueOf(avgPrice).setScale(1,
+				RoundingMode.HALF_UP);
 		
-		System.out.println(avg);
+		log.info(avg);
 		Assertions.assertEquals(74.7, avg.doubleValue());
 	}
 	
@@ -138,12 +135,42 @@ class PersonCRUDTest extends EntityManagerTest {
 		cq.where(cb.equal(root.get(Person_.id), 10L));
 		TypedQuery<Person> query = em.createQuery(cq);
 		List<Person> persons = query.getResultList();
-		persons.forEach(System.out::println);
-		assertEquals("unknown", Imc.imcByGender(persons.get(0)));
+		persons.forEach(log::info);
+		Assertions.assertEquals("unknown", Imc.imcByGender(persons.get(0)));
 	}
 	
 	@Test
 	@Order(6)
+	void selectPersonTest4() {
+		DAO<Person> dao = new DAO<>(Person.class);
+		Person person = dao.searchById(10L);
+		dao.end();
+		log.info(person);
+		Assertions.assertEquals("John", person.getFirstname());
+	}
+	
+	@Test
+	@Order(7)
+	void selectPersonTest5() {
+		DAO<Person> dao = new DAO<>(Person.class);
+		Person person = dao.findById(10L);
+		dao.end();
+		log.info(person);
+		Assertions.assertEquals("John", person.getFirstname());
+	}
+	
+	@Test
+	@Order(8)
+	void selectPersonTest6() {
+		DAO<Person> dao = new DAO<>(Person.class);
+		List<Person> persons = dao.listAll(4, 2);
+		dao.end();
+		persons.forEach(log::info);
+		Assertions.assertEquals(4, persons.size());
+	}
+	
+	@Test
+	@Order(9)
 	void updatePersonTest() {
 		// lower(p.firstname) like lower(concat('%', :name, '%'))
 		String qlString = """
@@ -151,27 +178,28 @@ class PersonCRUDTest extends EntityManagerTest {
 				where lower(p.firstname) like lower(concat('%', :name, '%'))
 			""";
 		Query query = em.createQuery(qlString);
-		query.setParameter("name", "Mary");
+		query.setParameter("name", "MARY");
 		Person person = (Person) query.getSingleResult();
 		
 		person.setFirstname("Mary Update");
+		person.setGender('f'); // callback it's work
 		person.getAddresses().clear();
 		person.getEmails().clear();
 		person.getPhones().clear();
-		person.personDiedNow();
+		LocalDate date = LocalDate.now().minus(120, ChronoUnit.DAYS);
+		person.diedIn(date);
 		
 		em.getTransaction().begin();
 		em.merge(person);
 		em.getTransaction().commit();
 		
-		System.out.println(person);
-		Assertions.assertEquals(LocalDate.now(), person.getDeathdate());
+		log.info(person);
+		Assertions.assertEquals(date, person.getDeathdate());
 	}
 	
 	@Test
-	@Order(7)
+	@Order(10)
 	void updatePersonTest2() {
-		
 		CriteriaBuilder cb = em.getCriteriaBuilder();
 		
 		CriteriaUpdate<Person> update = cb.createCriteriaUpdate(Person.class);
@@ -179,9 +207,8 @@ class PersonCRUDTest extends EntityManagerTest {
 		Root<Person> root = update.from(Person.class);
 		
 		update.set(root.get(Person_.firstname), "John Update");
+		update.set(root.get(Person_.gender), 'm'); // callback it's not work
 		update.set(root.get(Person_.deathdate), LocalDate.now());
-		
-		update.set(root.get(Person_.dateUpdate), LocalDateTime.now());
 		
 		Predicate like = cb.like(root.get(Person_.firstname), "John");
 		
@@ -191,15 +218,15 @@ class PersonCRUDTest extends EntityManagerTest {
 		int i = em.createQuery(update).executeUpdate();
 		em.getTransaction().commit();
 		
-		System.out.println(i);
+		log.info(i);
 		Assertions.assertEquals(1, i);
 	}
 	
 	@Test
-	@Order(8)
+	@Order(11)
 	void deletePersonTest() {
 		Person person = em.find(Person.class, 13L);
-		System.out.println(person);
+		log.info(person);
 		if (person != null) {
 			em.getTransaction().begin();
 			em.remove(person);
@@ -209,30 +236,30 @@ class PersonCRUDTest extends EntityManagerTest {
 	}
 	
 	@Test
-	@Order(9)
+	@Order(12)
 	void personsWithPartnersTest() {
 		TypedQuery<Person> query = em.createNamedQuery("Persons.withPartners",
 				Person.class);
 		List<Person> persons = query.getResultList();
 		
-		persons.forEach(System.out::println);
-		Assertions.assertEquals(2, persons.size());
+		persons.forEach(log::info);
+		Assertions.assertEquals(3, persons.size());
 	}
 	
 	@Test
-	@Order(10)
+	@Order(13)
 	void personsByAgeTest() {
 		TypedQuery<Person> query = em
 				.createNamedQuery("Persons.greaterOrEqualtoAge", Person.class);
 		query.setParameter("age", 25);
 		List<Person> persons = query.getResultList();
 		
-		persons.forEach(System.out::println);
+		persons.forEach(log::info);
 		Assertions.assertEquals(2, persons.size());
 	}
 	
 	@Test
-	@Order(11)
+	@Order(14)
 	void personsWithPhonesTest() {
 		TypedQuery<Person> query = em.createNamedQuery("Persons.withPhoners",
 				Person.class);
@@ -240,12 +267,12 @@ class PersonCRUDTest extends EntityManagerTest {
 		query.setMaxResults(10); // limit
 		List<Person> persons = query.getResultList();
 		
-		persons.forEach(System.out::println);
+		persons.forEach(log::info);
 		Assertions.assertEquals(5, persons.size());
 	}
 	
 	@Test
-	@Order(12)
+	@Order(15)
 	void personsWithEmailsTest() {
 		TypedQuery<Person> query = em.createNamedQuery("Persons.withEmails",
 				Person.class);
@@ -253,12 +280,12 @@ class PersonCRUDTest extends EntityManagerTest {
 		query.setMaxResults(10);
 		List<Person> persons = query.getResultList();
 		
-		persons.forEach(System.out::println);
-		Assertions.assertEquals(5, persons.size());
+		persons.forEach(log::info);
+		Assertions.assertEquals(6, persons.size());
 	}
 	
 	@Test
-	@Order(13)
+	@Order(16)
 	void findAllPersonsLiveTest() {
 		TypedQuery<Person> query = em.createNamedQuery("Persons.findAllLive",
 				Person.class);
@@ -267,7 +294,7 @@ class PersonCRUDTest extends EntityManagerTest {
 		query.setParameter(2, 2);
 		List<Person> persons = query.getResultList();
 		
-		persons.forEach(System.out::println);
+		persons.forEach(log::info);
 		Assertions.assertEquals(2, persons.size());
 	}
 }

@@ -29,9 +29,13 @@ public class WishListBalance {
 			double avg, int count) {
 		this.firstname = firstname;
 		this.title = title;
-		this.total = BigDecimal.valueOf(total).setScale(2, RoundingMode.HALF_EVEN);
-		this.average = BigDecimal.valueOf(avg).setScale(2, RoundingMode.HALF_EVEN);
+		this.total = roundValue(total);
+		this.average = roundValue(avg);
 		this.count = count;
+	}
+	
+	private BigDecimal roundValue(double total) {
+		return BigDecimal.valueOf(total).setScale(2, RoundingMode.HALF_EVEN);
 	}
 	
 	public WishListBalance(Tuple tuple) {
@@ -45,11 +49,12 @@ public class WishListBalance {
 	//@formatter:off
 	@Override
 	public String toString() {
+		NumberFormat cf = NumberFormat.getCurrencyInstance(Locale.getDefault());
 		return new StringBuilder("WishListBalance [")
 				.append("firstname=").append(firstname)
 				.append(", title=").append(title)
-				.append(", total=").append(NumberFormat.getCurrencyInstance(Locale.getDefault()).format(this.total))
-				.append(", average=").append(NumberFormat.getCurrencyInstance(Locale.getDefault()).format(this.average))
+				.append(", total=").append(cf.format(this.total))
+				.append(", average=").append(cf.format(this.average))
 				.append(", count=").append(this.count)
 				.append("]").toString();
 	}

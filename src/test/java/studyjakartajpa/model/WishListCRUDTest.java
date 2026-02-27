@@ -34,10 +34,11 @@ class WishListCRUDTest extends EntityManagerTest {
 		Product product1 = em.find(Product.class, 10L);
 		Product product2 = em.find(Product.class, 11L);
 		Product product3 = em.find(Product.class, 12L);
+		Product product4 = em.find(Product.class, 13L);
 		
 		WishList officeList = WishList.of("Office supplies",
 				"Monthly purchase for the office", person);
-		officeList.setProducts(product1, product2, product3);
+		officeList.setProducts(product1, product2, product3, product4);
 		
 		em.getTransaction().begin();
 		em.persist(officeList);
@@ -49,10 +50,10 @@ class WishListCRUDTest extends EntityManagerTest {
 		
 		cq.select(root).where(cb.equal(root.get(WishList_.person), person));
 		
-		WishList wishList = em.createQuery(cq).getSingleResult();
+		List<WishList> wishLists = em.createQuery(cq).getResultList();
 		
-		System.out.println(wishList);
-		Assertions.assertEquals(3, wishList.getProducts().size());
+		wishLists.forEach(log::info);
+		Assertions.assertEquals(4, wishLists.getFirst().getProducts().size());
 	}
 	
 	@Test
@@ -67,8 +68,8 @@ class WishListCRUDTest extends EntityManagerTest {
 		
 		List<WishList> wishLists = em.createQuery(cq).getResultList();
 		
-		wishLists.forEach(System.out::println);
-		Assertions.assertEquals(1, wishLists.size());
+		wishLists.forEach(log::info);
+		Assertions.assertEquals(2, wishLists.size());
 	}
 	
 	@Test
@@ -97,19 +98,20 @@ class WishListCRUDTest extends EntityManagerTest {
 		TypedQuery<Tuple> query = em.createQuery(cq);
 		
 		List<Tuple> result = query.getResultList();
+		
 		ArrayList<Object[]> list = new ArrayList<>();
 		for (Tuple tuple : result) {
 			list.add(new Object[] { tuple.get("firstname"), tuple.get("title"),
 					tuple.get("total"), tuple.get("average"),
 					tuple.get("counter") });
 		}
-		list.forEach(o -> System.out.println(Arrays.toString(o)));
-		Assertions.assertEquals(1, list.size());
+		list.forEach(o -> log.info(Arrays.toString(o)));
+		Assertions.assertEquals(2, list.size());
 		
 		List<WishListBalance> wishListBalances = query.getResultList().stream()
 				.map(WishListBalance::new).toList();
-		wishListBalances.forEach(System.out::println);
-		Assertions.assertEquals(1, wishListBalances.size());
+		wishListBalances.forEach(log::info);
+		Assertions.assertEquals(2, wishListBalances.size());
 		
 	}
 	
@@ -119,17 +121,17 @@ class WishListCRUDTest extends EntityManagerTest {
 		
 		Product product = em.find(Product.class, 10L);
 		
-		WishList wishList = em.find(WishList.class, 10L);
+		WishList wl = em.find(WishList.class, 10L);
 		
-		boolean remove = wishList.getProducts().remove(product);
+		boolean remove = wl.getProducts().remove(product);
 		
 		em.getTransaction().begin();
-		em.merge(wishList);
+		em.merge(wl);
 		em.getTransaction().commit();
 		
 		Assertions.assertTrue(remove);
-		Assertions.assertEquals(2, wishList.getProducts().size());
-		Assertions.assertEquals(19.25, wishList.getPriceTotal());
+		Assertions.assertEquals(2, wl.getProducts().size());
+		Assertions.assertEquals(new BigDecimal("19.25"), wl.getPriceTotal());
 	}
 	
 	@Test

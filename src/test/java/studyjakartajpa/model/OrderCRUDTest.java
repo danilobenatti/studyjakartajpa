@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
@@ -25,6 +26,8 @@ import studyjakartajpa.util.EntityManagerTest;
 @TestMethodOrder(OrderAnnotation.class)
 class OrderCRUDTest extends EntityManagerTest {
 	
+	private static final int CURRENT_YEAR = LocalDate.now().getYear();
+
 	@Test
 	@org.junit.jupiter.api.Order(1)
 	void includeOrderTest() {
@@ -57,16 +60,16 @@ class OrderCRUDTest extends EntityManagerTest {
 		
 		Order oTest = em.find(Order.class, o1.getId());
 		
-		System.out.println(oTest);
+		log.info(oTest);
 		Assertions.assertEquals(4, oTest.getOrderItems().size());
-		Assertions.assertEquals(57.47, oTest.getTotal());
+		Assertions.assertEquals(new BigDecimal("57.48"), oTest.getTotal());
 		
 	}
 	
 	@Test
 	@org.junit.jupiter.api.Order(2)
 	void includeOrderTest2() {
-Person person = em.find(Person.class, 10L);
+		Person person = em.find(Person.class, 10L);
 		
 		Product prd1 = em.find(Product.class, 10L);
 		Product prd2 = em.find(Product.class, 11L);
@@ -90,13 +93,13 @@ Person person = em.find(Person.class, 10L);
 		
 		DAO<Order> dao = new DAO<>(Order.class);
 		
-		dao.addEntity(o1).addEntity(o2).end();;
+		dao.addEntity(o1).addEntity(o2).end();
 		
 		Order oTest = new DAO<>(Order.class).findById(o1.getId());
 		
-		System.out.println(oTest);
+		log.info(oTest);
 		Assertions.assertEquals(4, oTest.getOrderItems().size());
-		Assertions.assertEquals(57.47, oTest.getTotal());
+		Assertions.assertEquals(new BigDecimal("57.48"), oTest.getTotal());
 	}
 	
 	@Test
@@ -105,15 +108,14 @@ Person person = em.find(Person.class, 10L);
 		TypedQuery<OrderSale> query = em.createNamedQuery("Orders.AvgMonthly",
 				OrderSale.class);
 		
-		int yearOfOrders = 2025;
 		Byte paid = OrderStatus.PAID.getCode();
-		query.setParameter(1, yearOfOrders);
+		query.setParameter(1, CURRENT_YEAR);
 		query.setParameter(2, paid);
 		
-		List<?> results = query.getResultList();
+		List<OrderSale> results = query.getResultList();
 		
-		results.forEach(System.out::println);
-		Assertions.assertEquals(2, results.size());
+		results.forEach(log::info);
+		Assertions.assertEquals(1, results.size());
 	}
 	
 	@Test
@@ -122,15 +124,14 @@ Person person = em.find(Person.class, 10L);
 		TypedQuery<OrderSale> query = em.createNamedQuery("Orders.AvgMonthly2",
 				OrderSale.class);
 		
-		int yearOfOrders = 2025;
 		Byte paid = OrderStatus.PAID.getCode();
-		query.setParameter(1, yearOfOrders);
+		query.setParameter(1, CURRENT_YEAR);
 		query.setParameter(2, paid);
 		
 		List<OrderSale> results = query.getResultList();
 		
-		results.forEach(System.out::println);
-		Assertions.assertEquals(2, results.size());
+		results.forEach(log::info);
+		Assertions.assertEquals(1, results.size());
 	}
 	
 	@Test
@@ -141,7 +142,7 @@ Person person = em.find(Person.class, 10L);
 				extract(YEAR from o.billingDate),
 				extract(MONTH from o.billingDate),
 				round(avg(o.total), 2),
-				count(o.id), 
+				count(o.id),
 				o.status)
 			from Order o
 			where extract(YEAR from o.billingDate) = :year
@@ -151,17 +152,16 @@ Person person = em.find(Person.class, 10L);
 			""";
 		TypedQuery<OrderSale> query = em.createQuery(jpql, OrderSale.class);
 		
-		int yearOfOrders = 2025;
 		Byte paid = OrderStatus.PAID.getCode();
 		Byte waiting = OrderStatus.WAITING.getCode();
 		List<Byte> statuses = Arrays.asList(paid, waiting);
 		
-		query.setParameter("year", yearOfOrders);
+		query.setParameter("year", CURRENT_YEAR);
 		query.setParameter("status", statuses);
 		
 		List<OrderSale> results = query.getResultList();
-		results.forEach(System.out::println);
-		Assertions.assertEquals(2, results.size());
+		results.forEach(log::info);
+		Assertions.assertEquals(3, results.size());
 	}
 	
 	@Test
@@ -188,12 +188,11 @@ Person person = em.find(Person.class, 10L);
 				avgTotal.alias("average"), count.alias("counter"),
 				status.alias("status")));
 		
-		int yearOfOrders = 2025;
 		Byte paid = OrderStatus.PAID.getCode();
 		Byte waiting = OrderStatus.WAITING.getCode();
 		List<Byte> statuses = Arrays.asList(paid, waiting);
 		
-		cq.where(cb.and(cb.equal(yearPart, yearOfOrders), status.in(statuses)));
+		cq.where(cb.and(cb.equal(yearPart, CURRENT_YEAR), status.in(statuses)));
 		
 		cq.groupBy(yearPart, monthPart, status, billingDate);
 		
@@ -202,8 +201,8 @@ Person person = em.find(Person.class, 10L);
 		TypedQuery<Tuple> query = em.createQuery(cq);
 		List<OrderSale> os = query.getResultList().stream().map(OrderSale::new)
 				.toList();
-		os.forEach(System.out::println);
-		Assertions.assertEquals(3, os.size());
+		os.forEach(log::info);
+		Assertions.assertEquals(5, os.size());
 	}
 	
 	@Test
@@ -227,9 +226,10 @@ Person person = em.find(Person.class, 10L);
 		
 		TypedQuery<Tuple> query = em.createQuery(cq);
 		List<String> list = query.getResultList().stream().map(
-				t -> StringUtils.joinWith(",", t.get("date"), t.get("count")))
+				t -> StringUtils.joinWith("=", t.get("date"), t.get("count")))
 				.toList();
-		System.out.println(list);
+		
+		list.forEach(log::info);
 		Assertions.assertNotNull(list);
 	}
 	
@@ -240,8 +240,7 @@ Person person = em.find(Person.class, 10L);
 		
 		List<OrderItem> items = o1.getOrderItems();
 		
-		java.util.function.Predicate<OrderItem> isNotActive = i -> !i
-				.getProduct().isActive();
+		Predicate<OrderItem> isNotActive = i -> !i.getProduct().isActive();
 		
 		items.removeIf(isNotActive);
 		
@@ -249,9 +248,9 @@ Person person = em.find(Person.class, 10L);
 		em.merge(o1);
 		em.getTransaction().commit();
 		
-		System.out.println(o1);
-		Assertions.assertEquals(3, o1.getOrderItems().size());
-		Assertions.assertEquals(22.99, o1.getTotal());
+		log.info(o1);
+		Assertions.assertEquals(2, o1.getOrderItems().size());
+		Assertions.assertEquals(new BigDecimal("18.29"), o1.getTotal());
 	}
 	
 	@Test

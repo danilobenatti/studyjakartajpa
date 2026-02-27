@@ -12,6 +12,7 @@ import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -19,16 +20,16 @@ import org.eclipse.persistence.annotations.CascadeOnDelete;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.NamedQuery;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -43,12 +44,22 @@ import studyjakartajpa.model.enums.ProductUnit;
 @NoArgsConstructor
 @RequiredArgsConstructor
 @Entity
+@EntityListeners(value = { AuditListener.class })
 @Table(name = "products", catalog = "jpaforbeginners", schema = "public")
 @NamedQuery(name = "Product.willExpire", query = """
 	select p from Product p where p.validity <= :date
 	""", resultClass = Product.class)
 public class Product implements Serializable {
+	
 	private static final long serialVersionUID = 1L;
+	
+	static Locale locale = Locale.getDefault();
+	
+	static ZoneId systemDefault = ZoneId.systemDefault();
+	
+	static final NumberFormat CF = NumberFormat.getCurrencyInstance(locale);
+	
+	static final NumberFormat PF = NumberFormat.getPercentInstance(locale);
 	
 	@Id
 	@SequenceGenerator(catalog = "jpaforbeginners", schema = "public",
@@ -67,6 +78,7 @@ public class Product implements Serializable {
 	private String description;
 	
 	@NonNull
+	@NotNull
 	@Column(name = "unitPrice", precision = 18, scale = 2, nullable = false)
 	private BigDecimal unitPrice = BigDecimal.ZERO;
 	
@@ -83,7 +95,7 @@ public class Product implements Serializable {
 	}
 	
 	@Column(name = "discount", nullable = false,
-		columnDefinition = "NUMERIC(4,2)")
+		columnDefinition = "NUMERIC(4,2) default 0.0")
 	private float discount = 0F;
 	
 	@Column(name = "validity")
@@ -96,34 +108,25 @@ public class Product implements Serializable {
 	@Column(name = "active")
 	private boolean active = true;
 	
-	@Setter(value = AccessLevel.NONE)
+	@Setter(value = AccessLevel.PROTECTED)
 	@Column(name = "dateinsert", updatable = false,
 		columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateCreate;
 	
-	@PrePersist
-	protected void whenPersist() {
-		this.dateCreate = LocalDateTime.now();
-	}
-	
-	@Setter(value = AccessLevel.NONE)
-	@Column(name = "dateupdate", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+	@Setter(value = AccessLevel.PROTECTED)
+	@Column(name = "dateupdate", insertable = false,
+		columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateUpdate;
 	
-	@PreUpdate
-	protected void whenUpdate() {
-		this.dateUpdate = LocalDateTime.now();
-	}
-	
-	@Builder(setterPrefix = "with")
+	@Builder(builderMethodName = "maker", buildMethodName = "done")
 	public static Product of(String title, String description, float discount,
 			double unitPrice, ProductUnit unit) {
 		Product product = new Product();
 		product.setTitle(title);
 		product.setDescription(description);
 		product.setDiscount(discount);
-		product.setUnitPrice(BigDecimal.valueOf(unitPrice).setScale(3,
-				RoundingMode.HALF_EVEN));
+		product.setUnitPrice(new BigDecimal(String.valueOf(unitPrice))
+				.setScale(2, RoundingMode.HALF_EVEN));
 		product.setUnit(unit);
 		return product;
 	}
@@ -131,25 +134,24 @@ public class Product implements Serializable {
 	@Override
 	public String toString() {
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("title", getTitle())
-				.append("description", getDescription())
-				.append("price", getPriceFormatted())
-				.append("unit", getUnit().getValue())
-				.append("validity", getValidity()).build();
+				.append("id", this.getId()).append("title", this.getTitle())
+				.append("description", this.getDescription())
+				.append("price", this.getPriceInfo())
+				.append("unit", this.getUnit().getValue())
+				.append("validity", this.getValidity()).build();
 	}
 	
-	public String getPriceFormatted() {
-		return this.getPriceFormatted(Locale.getDefault());
+	public String getPriceInfo() {
+		String price = CF.format(this.getPriceWithDiscount());
+		if (Float.compare(this.getDiscount(), 0) > 0)
+			return "%s(-%s)".formatted(price, PF.format(this.getDiscount()));
+		return price;
 	}
 	
-	public String getPriceFormatted(Locale locale) {
-		NumberFormat cf = NumberFormat.getCurrencyInstance(locale);
-		NumberFormat pf = NumberFormat.getPercentInstance(locale);
-		StringBuilder builder = new StringBuilder(
-				cf.format(getPriceWithDiscount()));
-		if (getDiscount() > 0)
-			builder.append("(").append(pf.format(getDiscount())).append(")");
-		return builder.toString();
+	public String getProductInfo() {
+		return "%s-%s=%s".formatted(this.getId(), this.getTitle(),
+				Optional.ofNullable(getPriceInfo()).filter(s -> !s.isBlank())
+						.orElse(""));
 	}
 	
 	/**
@@ -158,7 +160,11 @@ public class Product implements Serializable {
 	 * @return BigDecimal value
 	 */
 	public BigDecimal getPriceWithDiscount() {
-		return getUnitPrice().multiply(BigDecimal.valueOf(1 - getDiscount()))
+		var thisDiscount = new BigDecimal(Float.toString(this.getDiscount()));
+		if (thisDiscount == null || thisDiscount.signum() == 0)
+			return this.getUnitPrice().setScale(2, RoundingMode.HALF_EVEN);
+		return this.getUnitPrice()
+				.multiply(BigDecimal.ONE.subtract(thisDiscount))
 				.setScale(2, RoundingMode.HALF_EVEN);
 	}
 	
@@ -166,11 +172,15 @@ public class Product implements Serializable {
 	 * Gets the product price with an additional discount applied over
 	 * getPriceWithDiscount.
 	 * 
-	 * @param discount
+	 * @param addDiscount
 	 * @return BigDecimal value
 	 */
-	public BigDecimal getPriceWithDiscount(float discount) {
-		return getPriceWithDiscount().multiply(BigDecimal.valueOf(1 - discount))
+	public BigDecimal getPriceWithDiscount(float addDiscount) {
+		if (Float.compare(addDiscount, 0) == 0)
+			return this.getPriceWithDiscount();
+		return this.getPriceWithDiscount()
+				.multiply(BigDecimal.ONE
+						.subtract(new BigDecimal(String.valueOf(addDiscount))))
 				.setScale(2, RoundingMode.HALF_EVEN);
 	}
 	
@@ -183,7 +193,7 @@ public class Product implements Serializable {
 	 * @return object Product with the set expiration date
 	 */
 	public Product setValidity(long i, TemporalUnit unit) {
-		return setValidity(i, unit, ZoneId.systemDefault());
+		return this.setValidity(i, unit, systemDefault);
 	}
 	
 	/**
@@ -195,7 +205,8 @@ public class Product implements Serializable {
 	 * @return object Product with the set expiration date
 	 */
 	public Product setValidity(long i, TemporalUnit unit, ZoneId zoneId) {
-		LocalDate date = getDateCreate() != null ? getDateCreate().toLocalDate()
+		LocalDate date = this.getDateCreate() != null
+				? this.getDateCreate().toLocalDate()
 				: LocalDate.now(zoneId);
 		setValidity(switch (unit) {
 			case ChronoUnit.DAYS -> date.plusDays(i);
@@ -209,12 +220,12 @@ public class Product implements Serializable {
 	}
 	
 	public boolean validityIsOk() {
-		return validityIsOk(ZoneId.systemDefault());
+		return isValid(systemDefault);
 	}
 	
-	public boolean validityIsOk(ZoneId zoneId) {
-		if (getValidity() != null)
-			return getValidity().isAfter(LocalDate.now(zoneId));
+	public boolean isValid(ZoneId zoneId) {
+		if (this.getValidity() != null)
+			return this.getValidity().isAfter(LocalDate.now(zoneId));
 		return false;
 	}
 	

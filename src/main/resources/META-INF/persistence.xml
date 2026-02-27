@@ -17,6 +17,7 @@
 		<class>studyjakartajpa.model.WishList</class>
 		<class>studyjakartajpa.model.Order</class>
 		<class>studyjakartajpa.model.OrderItem</class>
+		<class>studyjakartajpa.model.Employee</class>
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 
 		<properties>

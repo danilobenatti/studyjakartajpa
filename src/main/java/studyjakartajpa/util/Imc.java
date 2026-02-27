@@ -75,15 +75,15 @@ public class Imc {
 		if (value <= 0 || Double.isNaN(value)) {
 			info = "unknown";
 		} else if (value > 0 && value < 19.1) {
-			info = String.format("[%.1f] under weight", value);
+			info = "[%.1f] under weight".formatted(value);
 		} else if (value > 19.2 && value < 25.8) {
-			info = String.format("[%.1f] at ideal weight", value);
+			info = "[%.1f] at ideal weight".formatted(value);
 		} else if (value > 25.9 && value < 27.3) {
-			info = String.format("[%.1f] a little overweight", value);
+			info = "[%.1f] a little overweight".formatted(value);
 		} else if (value > 27.4 && value < 32.3) {
-			info = String.format("[%.1f] over ideal weight", value);
+			info = "[%.1f] over ideal weight".formatted(value);
 		} else {
-			info = String.format("[%.1f] is obese", value);
+			info = "[%.1f] is obese".formatted(value);
 		}
 		return info;
 	}
@@ -99,15 +99,15 @@ public class Imc {
 		if (value <= 0 || Double.isNaN(value)) {
 			info = "unknown";
 		} else if (value > 0 && value < 20.7) {
-			info = String.format("[%.1f] under weight", value);
+			info = "[%.1f] under weight".formatted(value);
 		} else if (value > 20.8 && value < 26.4) {
-			info = String.format("[%.1f] at ideal weight", value);
+			info = "[%.1f] at ideal weight".formatted(value);
 		} else if (value > 26.5 && value < 27.8) {
-			info = String.format("[%.1f] a little overweight", value);
+			info = "[%.1f] a little overweight".formatted(value);
 		} else if (value > 27.9 && value < 31.1) {
-			info = String.format("[%.1f] over ideal weight", value);
+			info = "[%.1f] over ideal weight".formatted(value);
 		} else {
-			info = String.format("[%.1f] is obese", value);
+			info = "[%.1f] is obese".formatted(value);
 		}
 		return info;
 	}

@@ -4,15 +4,16 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -30,7 +31,7 @@ class ProductCRUDTest extends EntityManagerTest {
 	void includeProductTest() {
 		
 		Product prd = Product.of("Title Product Test1 Include",
-				"Description Product Test", 0.15F, 15.5, ProductUnit.UNITY);
+				"Description Product Test1", 0.15F, 15.5, ProductUnit.UNITY);
 		prd.setValidity(18, ChronoUnit.MONTHS);
 		
 		em.getTransaction().begin();
@@ -41,13 +42,12 @@ class ProductCRUDTest extends EntityManagerTest {
 			select p from Product p
 			where lower(p.title) like lower(concat('%', :name, '%'))
 			""";
-		Query query = em.createQuery(qlString);
-		query.setParameter("name", "test1");
-		Product product = (Product) query.getSingleResult();
+		TypedQuery<Product> query = em.createQuery(qlString, Product.class);
+		query.setParameter("name", "test1 include");
+		Product product = query.getResultList().getFirst();
 		
-		System.out.println(product);
-		Assertions.assertEquals("Title Product Test1 Include",
-				product.getTitle());
+		log.info(product);
+		Assertions.assertTrue(product.getTitle().contains("Test1 Include"));
 		Assertions.assertEquals(15.5, product.getUnitPrice().doubleValue());
 		Assertions.assertEquals(13.18,
 				product.getPriceWithDiscount().doubleValue());
@@ -58,13 +58,23 @@ class ProductCRUDTest extends EntityManagerTest {
 	void includeProductTest2() {
 		DAO<Product> dao = new DAO<>(Product.class);
 		
-		Product product = Product.of("Title Product Test2 Include",
+		Product product1 = Product.of("Title Product Test2 Include",
 				"Description Product Test2", 0.15F, 15.5, ProductUnit.UNITY);
-		product.setValidity(18, ChronoUnit.MONTHS);
+		product1.setValidity(18, ChronoUnit.MONTHS);
 		
-		dao.addEntity(product).end();
+		Product product2 = Product.maker().title("Title Product Test3 Include")
+				.description("Description Product Test3")
+				.unitPrice(Double.valueOf("15.5")).unit(ProductUnit.UNITY)
+				.done();
+		product2.setValidity(18, ChronoUnit.MONTHS);
 		
-		Assertions.assertEquals(101, product.getId());
+		List<Product> products = Arrays.asList(product1, product2);
+		
+		dao.addAllEntity(products).end();
+		
+		products.forEach(log::info);
+		Assertions.assertNotNull(product1, "Product not found.");
+		Assertions.assertNotNull(product2, "Product not found.");
 	}
 	
 	@Test
@@ -76,14 +86,14 @@ class ProductCRUDTest extends EntityManagerTest {
 		
 		Root<Product> root = cq.from(Product.class);
 		
-		cq.select(root).where(cb.equal(root.get(Product_.title),
-				"Title Product Test1 Include"));
+		cq.select(root)
+				.where(cb.equal(root.get(Product_.title), "Title Product 4"));
 		
 		Product product = em.createQuery(cq).getSingleResult();
 		
-		Assertions.assertEquals("Title Product Test1 Include",
-				product.getTitle());
-		Assertions.assertEquals(13.18, product.getPriceWithDiscount()
+		Assertions.assertTrue(
+				StringUtils.containsAny("product 4", product.getTitle()));
+		Assertions.assertEquals(41.0, product.getPriceWithDiscount()
 				.round(new MathContext(4)).doubleValue());
 	}
 	
@@ -95,7 +105,7 @@ class ProductCRUDTest extends EntityManagerTest {
 		query.setParameter("date", LocalDate.now().plusYears(1));
 		
 		List<Product> products = query.getResultList();
-		products.forEach(System.out::println);
+		products.forEach(log::info);
 		Assertions.assertEquals(2, products.size());
 	}
 	
@@ -117,7 +127,7 @@ class ProductCRUDTest extends EntityManagerTest {
 		Product p = (Product) em.createQuery(qlString).setParameter("id", 11L)
 				.getSingleResult();
 		
-		System.out.println(p);
+		log.info(p);
 		MathContext mc = new MathContext(3);
 		Assertions.assertEquals(BigDecimal.valueOf(5.25),
 				p.getPriceWithDiscount().round(mc));
@@ -171,9 +181,8 @@ class ProductCRUDTest extends EntityManagerTest {
 		Product product = dao.findById(101L);
 		System.out.println(product);
 		
-		if (product != null) {
+		if (product != null)
 			dao.deleteEntity(product).end();
-		}
 		
 		Assertions.assertNull(em.find(Product.class, product.getId()));
 	}

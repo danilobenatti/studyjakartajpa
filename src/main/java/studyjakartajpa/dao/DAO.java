@@ -54,8 +54,18 @@ public class DAO<E> {
 		return this;
 	}
 	
+	public DAO<E> addAll(List<E> entities) {
+		entities.forEach(em::persist);
+		return this;
+	}
+	
 	public DAO<E> update(E entity) {
 		em.merge(entity);
+		return this;
+	}
+	
+	public DAO<E> updateAll(List<E> entities) {
+		entities.forEach(em::merge);
 		return this;
 	}
 	
@@ -64,16 +74,33 @@ public class DAO<E> {
 		return this;
 	}
 	
+	public DAO<E> deleteAll(List<E> entities) {
+		entities.forEach(em::remove);
+		return this;
+	}
+	
 	public DAO<E> addEntity(E entity) {
 		return this.begin().add(entity).commit();
+	}
+	
+	public DAO<E> addAllEntity(List<E> entities) {
+		return this.begin().addAll(entities).commit();
 	}
 	
 	public DAO<E> updateEntity(E entity) {
 		return this.begin().update(entity).commit();
 	}
 	
+	public DAO<E> updateAllEntity(List<E> entities) {
+		return this.begin().updateAll(entities).commit();
+	}
+	
 	public DAO<E> deleteEntity(E entity) {
 		return this.begin().delete(entity).commit();
+	}
+	
+	public DAO<E> deleteAllEntity(List<E> entities) {
+		return this.begin().deleteAll(entities).commit();
 	}
 	
 	public E searchById(Object id) {
@@ -111,6 +138,11 @@ public class DAO<E> {
 		for (Object object : objects)
 			query.setParameter(i++, object);
 		return query.getResultList();
+	}
+	
+	public E getFirst(String qlString, Object... objects) {
+		List<E> list = execute(qlString, objects);
+		return list.isEmpty() ? null : list.get(0);
 	}
 	
 	public void end() {

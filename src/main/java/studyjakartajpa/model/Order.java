@@ -12,8 +12,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -23,6 +21,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.ColumnResult;
 import jakarta.persistence.ConstructorResult;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -30,8 +29,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedNativeQuery;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.SqlResultSetMapping;
 import jakarta.persistence.Table;
@@ -49,6 +46,7 @@ import studyjakartajpa.model.enums.OrderStatus;
 @NoArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
+@EntityListeners(value = { AuditListener.class })
 @Table(name = "orders", catalog = "jpaforbeginners", schema = "public")
 @NamedNativeQuery(name = "Orders.AvgMonthly2", query = """
 	select
@@ -71,6 +69,15 @@ import studyjakartajpa.model.enums.OrderStatus;
 				@ColumnResult(name = "status", type = Byte.class) }))
 public class Order implements Serializable {
 	private static final long serialVersionUID = 1L;
+	
+	static Locale locale = Locale.getDefault();
+	
+	static final DateTimeFormatter DTF = DateTimeFormatter
+			.ofPattern("dd/MMM/yyyy", locale);
+	
+	static final NumberFormat PF = NumberFormat.getPercentInstance(locale);
+	
+	static final NumberFormat CF = NumberFormat.getCurrencyInstance(locale);
 	
 	@Id
 	@EqualsAndHashCode.Include
@@ -115,23 +122,24 @@ public class Order implements Serializable {
 	@Column(name = "total", nullable = false, precision = 18, scale = 2)
 	private BigDecimal total = BigDecimal.ZERO;
 	
-	public double getTotal() {
-		return calcTotal().doubleValue();
+	public BigDecimal getTotal() {
+		return calcTotal();
 	}
 	
 	public void setTotal() {
-		this.total = calcTotal(this.orderItems, this.discount);
+		this.total = calcTotal(this.getOrderItems(), this.getDiscount());
 	}
 	
 	public BigDecimal calcTotal() {
-		return calcTotal(this.orderItems, this.discount);
+		return calcTotal(this.getOrderItems(), this.getDiscount());
 	}
 	
 	public BigDecimal calcTotal(List<OrderItem> orderitems, float discount) {
 		if (isNotEmptyOrNull(orderitems)) {
 			return orderitems.stream().map(OrderItem::calcSubTotal)
 					.reduce(BigDecimal.ZERO, BigDecimal::add)
-					.multiply(BigDecimal.valueOf(1 - discount))
+					.multiply(BigDecimal.ONE
+							.subtract(new BigDecimal(Float.toString(discount))))
 					.setScale(2, RoundingMode.HALF_EVEN);
 		}
 		return BigDecimal.ZERO;
@@ -170,29 +178,17 @@ public class Order implements Serializable {
 		return getStatus().equals(OrderStatus.CANCELED);
 	}
 	
-	@Setter(value = AccessLevel.NONE)
+	@Setter(value = AccessLevel.PROTECTED)
 	@Column(name = "dateinsert", updatable = false,
 		columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateCreate;
 	
-	@PrePersist
-	protected void whenPersist() {
-		this.dateCreate = LocalDateTime.now();
-		calcPricesOrder();
-	}
-	
-	@Setter(value = AccessLevel.NONE)
-	@Column(name = "dateupdate", columnDefinition = "TIMESTAMP WITH TIME ZONE")
+	@Setter(value = AccessLevel.PROTECTED)
+	@Column(name = "dateupdate", insertable = false,
+		columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateUpdate;
 	
-	@PreUpdate
-	protected void whenUpdate() {
-		this.dateUpdate = LocalDateTime.now();
-		if (isWaitting())
-			calcPricesOrder();
-	}
-	
-	private void calcPricesOrder() {
+	public void calcPricesOrder() {
 		getOrderItems().forEach(OrderItem::setSubTotal);
 		this.setTotal();
 	}
@@ -208,25 +204,20 @@ public class Order implements Serializable {
 		return order;
 	}
 	
-	//@formatter:off
+	private List<String> listProducts() {
+		return this.getOrderItems().stream().map(OrderItem::getOrderItemInfo)
+				.toList();
+	}
+	
 	@Override
 	public String toString() {
-		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.getDefault());
-		NumberFormat pf = NumberFormat.getPercentInstance(Locale.getDefault());
-		NumberFormat cf = NumberFormat.getCurrencyInstance(Locale.getDefault());
-		
-		Map<String, String> products = getOrderItems().stream()
-				.collect(Collectors.toMap(i -> i.getProduct().getTitle(),
-						OrderItem::getItemWithPriceFormatted));
-		
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("person", getPerson().getFirstname())
-				.append("billingDate", dtf.format(getBillingDate()))
-				.append("discount", pf.format(getDiscount()))
-				.append("total", cf.format(getTotal()))
-				.append("status", getStatus().getValue())
-				.append("products", products).build();
+				.append("person", this.getPerson().getFirstname())
+				.append("billingDate", DTF.format(this.getBillingDate()))
+				.append("discount", PF.format(this.getDiscount()))
+				.append("total", CF.format(this.getTotal()))
+				.append("status", this.getStatus().getValue())
+				.append("products", this.listProducts()).build();
 	}
-	//@formatter:on
 	
 }

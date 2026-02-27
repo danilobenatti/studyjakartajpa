@@ -1,23 +1,22 @@
 package studyjakartajpa.model;
 
+import static java.text.NumberFormat.getNumberInstance;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-import org.apache.commons.lang3.StringUtils;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -29,9 +28,12 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Entity
+@EntityListeners(value = { AuditListener.class })
 @Table(name = "orderitems", catalog = "jpaforbeginners", schema = "public")
 public class OrderItem implements Serializable {
 	private static final long serialVersionUID = 1L;
+	
+	static final NumberFormat NF = getNumberInstance(Locale.getDefault());
 	
 	@EmbeddedId
 	private OrderItemPk id;
@@ -56,36 +58,20 @@ public class OrderItem implements Serializable {
 	@Column(name = "subtotal", nullable = false, precision = 18, scale = 2)
 	private BigDecimal subtotal;
 	
-	public BigDecimal getSubtotal() {
-		return this.subtotal.setScale(2, RoundingMode.HALF_EVEN);
-	}
-	
 	public void setSubTotal() {
 		this.subtotal = calcSubTotal();
 	}
 	
 	public BigDecimal calcSubTotal() {
-		return calcSubTotal(this.product, this.quantity);
+		return calcSubTotal(this.getProduct(),
+				new BigDecimal(Double.toString(this.getQuantity())));
 	}
 	
-	public BigDecimal calcSubTotal(Product product, double quantity) {
-		BigDecimal priceWithDiscount = product.getPriceWithDiscount();
-		if (priceWithDiscount.signum() > 0 && quantity > 0) {
-			return priceWithDiscount.multiply(BigDecimal.valueOf(quantity))
-					.setScale(2, RoundingMode.HALF_EVEN);
-		}
+	public BigDecimal calcSubTotal(Product product, BigDecimal quantity) {
+		BigDecimal price = product.getPriceWithDiscount();
+		if (price.signum() > 0 && quantity.signum() > 0)
+			return price.multiply(quantity).setScale(2, RoundingMode.HALF_EVEN);
 		return BigDecimal.ZERO;
-	}
-	
-	@PrePersist
-	private void whenPersist() {
-		setSubTotal();
-	}
-	
-	@PreUpdate
-	private void whenUpdate() {
-		if (getOrder().isWaitting())
-			setSubTotal();
 	}
 	
 	@Builder(setterPrefix = "with")
@@ -97,19 +83,14 @@ public class OrderItem implements Serializable {
 		return item;
 	}
 	
-	//@formatter:off
-	public String getItemWithPriceFormatted() {
-		NumberFormat cf = NumberFormat.getCurrencyInstance(Locale.getDefault());
-		NumberFormat pf = NumberFormat.getPercentInstance(Locale.getDefault());
-		NumberFormat nf = NumberFormat.getNumberInstance(Locale.getDefault());
-		StringBuilder builder = new StringBuilder(cf.format(getSubtotal()));
-		if (getProduct().getDiscount() > 0)
-			builder.append("(").append(pf.format(getProduct().getDiscount())).append(")");
-		builder.append(StringUtils.SPACE);
-		builder.append(nf.format(getQuantity()));
-		builder.append(getProduct().getUnit().getValue());
-		return builder.toString();
+	public String getOrderItemInfo() {
+		var sb = new StringBuilder(this.getProduct().getProductInfo());
+		
+		if (this.getQuantity() > 0 && this.getProduct().getUnit() != null)
+			sb.append(" ").append(NF.format(this.getQuantity()))
+					.append(this.getProduct().getUnit().getValue());
+		
+		return sb.toString();
 	}
-	//@formatter:on
 	
 }

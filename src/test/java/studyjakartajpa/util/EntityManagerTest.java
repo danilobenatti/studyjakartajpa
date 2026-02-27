@@ -1,5 +1,10 @@
 package studyjakartajpa.util;
 
+import java.net.URL;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
@@ -19,12 +24,15 @@ public class EntityManagerTest extends EntityManagerFactoryTest {
 	@BeforeEach
 	void setUpBeforeEach() {
 		em = emf.createEntityManager();
+		Configurator.initialize(EntityManagerTest.class.getName(),
+				"./src/main/resources/log4j2.properties");
 	}
 	
 	@AfterEach
 	void tearDownAfterEach() {
 		if (em.isOpen())
 			em.close();
+		log.traceExit();
 	}
 	
 }
