@@ -23,6 +23,8 @@ class EmployeeCRUDTest extends EntityManagerTest {
 		Employee e = new Employee("Employee Include Test1", 'M',
 				LocalDate.of(1990, Month.JANUARY, 1), "987654",
 				JobFunctions.ENG_JR, 1999.995, LocalDate.now().minusYears(3));
+		e.setWeight(89.5F);
+		e.setHeight(1.80F);
 		e.setEmails("employeeTest@wail.tw", "employeeTest2@wail.tw");
 		e.setPhones(Map.of('W', "(18)7979-8787", 'M', "(18)95656-1414"));
 		e.setAddress(Address.of("1486", "Buena Vista Dr", "Lake Buena Vista",

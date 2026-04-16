@@ -61,11 +61,11 @@ public class OrderSale {
 	@Override
 	public String toString() {
 		var sb = new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE);
-		sb.append("year", getYear());
-		sb.append("month", Month.of(getMonth()).getDisplayName(TextStyle.FULL, Locale.getDefault()).concat("(" + getMonth() + ")"));
-		sb.append("average", NumberFormat.getCurrencyInstance(Locale.getDefault()).format(this.average));
-		sb.append("count", getCount());
-		sb.append("status", OrderStatus.toEnum(getStatus()).getValue());
+		sb.append("year", this.getYear());
+		sb.append("month", Month.of(this.getMonth()).getDisplayName(TextStyle.FULL, Locale.getDefault()).concat("(" + this.getMonth() + ")"));
+		sb.append("average", NumberFormat.getCurrencyInstance(Locale.getDefault()).format(this.getAverage()));
+		sb.append("count", this.getCount());
+		sb.append("status", OrderStatus.toEnum(this.getStatus()).getValue());
 		return sb.build();
 	}
 	//@formatter:on

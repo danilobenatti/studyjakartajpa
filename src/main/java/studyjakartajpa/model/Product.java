@@ -12,6 +12,7 @@ import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -57,9 +58,11 @@ public class Product implements Serializable {
 	
 	static ZoneId systemDefault = ZoneId.systemDefault();
 	
-	static final NumberFormat CF = NumberFormat.getCurrencyInstance(locale);
+	private static final ThreadLocal<NumberFormat> CF = ThreadLocal
+			.withInitial(() -> NumberFormat.getCurrencyInstance(locale));
 	
-	static final NumberFormat PF = NumberFormat.getPercentInstance(locale);
+	private static final ThreadLocal<NumberFormat> PF = ThreadLocal
+			.withInitial(() -> NumberFormat.getPercentInstance(locale));
 	
 	@Id
 	@SequenceGenerator(catalog = "jpaforbeginners", schema = "public",
@@ -90,13 +93,14 @@ public class Product implements Serializable {
 	}
 	
 	public void setUnit(ProductUnit unit) {
+		if (unit == null)
+			throw new IllegalArgumentException("Product unit cannot be null.");
 		this.unit = unit.getCode();
 		
 	}
 	
-	@Column(name = "discount", nullable = false,
-		columnDefinition = "NUMERIC(4,2) default 0.0")
-	private float discount = 0F;
+	@Column(name = "discount", nullable = false, precision = 4, scale = 2)
+	private BigDecimal discount = BigDecimal.ZERO;
 	
 	@Column(name = "validity")
 	private LocalDate validity;
@@ -104,6 +108,11 @@ public class Product implements Serializable {
 	@CascadeOnDelete
 	@ManyToMany(mappedBy = "products", fetch = FetchType.LAZY)
 	private List<WishList> wishLists = new ArrayList<>();
+	
+	public List<WishList> getWishLists() {
+		return List.copyOf(this.wishLists);
+		
+	}
 	
 	@Column(name = "active")
 	private boolean active = true;
@@ -119,16 +128,42 @@ public class Product implements Serializable {
 	private LocalDateTime dateUpdate;
 	
 	@Builder(builderMethodName = "maker", buildMethodName = "done")
-	public static Product of(String title, String description, float discount,
-			double unitPrice, ProductUnit unit) {
+	public static Product of(String title, String description,
+			BigDecimal discount, BigDecimal unitPrice, ProductUnit unit) {
+		
+		Objects.requireNonNull(title, "Title can't be null");
+		title = title.trim();
+		if (title.isBlank())
+			throw new IllegalArgumentException("Title can't be blank");
+		
+		Objects.requireNonNull(description, "Description can't be null");
+		description = description.trim();
+		if (description.isBlank())
+			throw new IllegalArgumentException("Description can't be blank");
+		
+		Objects.requireNonNull(unitPrice, "Price can't be null");
+		if (unitPrice.compareTo(BigDecimal.ZERO) < 0)
+			throw new IllegalArgumentException("price can't be negative");
+		BigDecimal price = unitPrice.setScale(2, RoundingMode.HALF_EVEN);
+		
+		BigDecimal finalDiscount = discount == null ? BigDecimal.ZERO : discount;
+		if (finalDiscount.compareTo(BigDecimal.ZERO) < 0 || finalDiscount.compareTo(BigDecimal.ONE) > 0)
+			throw new IllegalArgumentException("Discount must be between 0(0%) and 1(100%)");
+		
+		Objects.requireNonNull(unit, "Unit can't be null");
+		
 		Product product = new Product();
 		product.setTitle(title);
 		product.setDescription(description);
-		product.setDiscount(discount);
-		product.setUnitPrice(new BigDecimal(String.valueOf(unitPrice))
-				.setScale(2, RoundingMode.HALF_EVEN));
+		product.setDiscount(finalDiscount);
+		product.setUnitPrice(price);
 		product.setUnit(unit);
 		return product;
+	}
+	
+	public static Product of(String title, String description,
+			BigDecimal discount, double unitPrice, ProductUnit unit) {
+		return of(title, description, discount, BigDecimal.valueOf(unitPrice), unit);
 	}
 	
 	@Override
@@ -142,9 +177,11 @@ public class Product implements Serializable {
 	}
 	
 	public String getPriceInfo() {
-		String price = CF.format(this.getPriceWithDiscount());
-		if (Float.compare(this.getDiscount(), 0) > 0)
-			return "%s(-%s)".formatted(price, PF.format(this.getDiscount()));
+		String price = CF.get().format(this.getPriceWithDiscount());
+		if (this.getDiscount().compareTo(BigDecimal.ZERO) > 0)
+			return "%s(-%s)".formatted(price, PF.get().format(this.getDiscount()));
+		CF.remove();
+		PF.remove();
 		return price;
 	}
 	
@@ -160,27 +197,21 @@ public class Product implements Serializable {
 	 * @return BigDecimal value
 	 */
 	public BigDecimal getPriceWithDiscount() {
-		var thisDiscount = new BigDecimal(Float.toString(this.getDiscount()));
-		if (thisDiscount == null || thisDiscount.signum() == 0)
+		if (this.getDiscount() == null || this.getDiscount().compareTo(BigDecimal.ZERO) == 0)
 			return this.getUnitPrice().setScale(2, RoundingMode.HALF_EVEN);
 		return this.getUnitPrice()
-				.multiply(BigDecimal.ONE.subtract(thisDiscount))
+				.multiply(BigDecimal.ONE.subtract(this.getDiscount()))
 				.setScale(2, RoundingMode.HALF_EVEN);
 	}
 	
 	/**
-	 * Gets the product price with an additional discount applied over
-	 * getPriceWithDiscount.
-	 * 
-	 * @param addDiscount
-	 * @return BigDecimal value
+	 * Overload accepting a decimal additional discount (0..1).
 	 */
-	public BigDecimal getPriceWithDiscount(float addDiscount) {
-		if (Float.compare(addDiscount, 0) == 0)
+	public BigDecimal getPriceWithDiscount(BigDecimal addDiscount) {
+		if (addDiscount == null || addDiscount.compareTo(BigDecimal.ZERO) == 0)
 			return this.getPriceWithDiscount();
 		return this.getPriceWithDiscount()
-				.multiply(BigDecimal.ONE
-						.subtract(new BigDecimal(String.valueOf(addDiscount))))
+				.multiply(BigDecimal.ONE.subtract(addDiscount))
 				.setScale(2, RoundingMode.HALF_EVEN);
 	}
 	
@@ -189,21 +220,13 @@ public class Product implements Serializable {
 	 * seconds) for product. Considers default zone_id.
 	 * 
 	 * @param i    amount of time
-	 * @param unit unit of time
+	 * @param unit ChronoUnit (LIMITED to days/weeks/months/years)
 	 * @return object Product with the set expiration date
 	 */
 	public Product setValidity(long i, TemporalUnit unit) {
 		return this.setValidity(i, unit, systemDefault);
 	}
 	
-	/**
-	 * 
-	 * 
-	 * @param i      amount of time
-	 * @param unit   unit of time
-	 * @param zoneId Zone ID used for a manufacturing/creation date
-	 * @return object Product with the set expiration date
-	 */
 	public Product setValidity(long i, TemporalUnit unit, ZoneId zoneId) {
 		LocalDate date = this.getDateCreate() != null
 				? this.getDateCreate().toLocalDate()
@@ -224,9 +247,8 @@ public class Product implements Serializable {
 	}
 	
 	public boolean isValid(ZoneId zoneId) {
-		if (this.getValidity() != null)
-			return this.getValidity().isAfter(LocalDate.now(zoneId));
-		return false;
+		LocalDate v = this.getValidity();
+		return v != null && v.isAfter(LocalDate.now(zoneId));
 	}
 	
 }

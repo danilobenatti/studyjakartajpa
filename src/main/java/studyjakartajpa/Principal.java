@@ -78,7 +78,6 @@ public class Principal {
 				.done();
 		p2.setAddress(Address.of("789", "Elm St.", null, "Boston", "MA", "USA",
 				"02110", true, p2));
-		p2.setPartner(p1);
 		
 		Person p3 = Person.maker().firstname("Jack").gender('M').weight(89.8F)
 				.height(1.78F).birthdate(LocalDate.of(1982, 7, 3))
@@ -108,16 +107,16 @@ public class Principal {
 		
 		List<Person> persons = List.of(p1, p2, p3, p4, p5);
 		
-		Product prd1 = Product
-				.of("Title 1", "Description 1", 0.05F, 5.5, ProductUnit.UNITY)
+		Product prd1 = Product.of("Title 1", "Description 1",
+				new BigDecimal("0.05"), 5.5, ProductUnit.UNITY)
 				.setValidity(6, ChronoUnit.MONTHS);
 		
-		Product prd2 = Product
-				.of("Title 2", "Description 2", 0.1F, 10.5, ProductUnit.UNITY)
+		Product prd2 = Product.of("Title 2", "Description 2",
+				new BigDecimal("0.1"), 10.5, ProductUnit.UNITY)
 				.setValidity(1, ChronoUnit.YEARS);
 		
-		Product prd3 = Product
-				.of("Title 3", "Description 3", 0.15F, 15.5, ProductUnit.UNITY)
+		Product prd3 = Product.of("Title 3", "Description 3",
+				new BigDecimal("0.15"), 15.5, ProductUnit.UNITY)
 				.setValidity(18, ChronoUnit.MONTHS);
 		
 		List<Product> products = List.of(prd1, prd2, prd3);
@@ -153,10 +152,13 @@ public class Principal {
 		p4.setOrder(o2);
 		
 		OrderItem i4 = OrderItem.of(o2, prd1, 1);
+		log.info(i4.calcSubTotal());
 		
 		OrderItem i5 = OrderItem.of(o2, prd2, 2);
+		log.info(i5.calcSubTotal());
 		
 		o2.setOrderItems(i4, i5);
+		log.info(o2.calcTotal());
 		
 		List<Order> orders = List.of(o1, o2);
 		
@@ -184,6 +186,7 @@ public class Principal {
 		e3.setAddress(Address.of("11", "Street Name", "10", "City", "State",
 				"Country", "147852", true, e3));
 		e3.diedIn(NOW.minusYears(1).minusMonths(6).minusDays(15));
+		e3.setPartner(e2);
 		
 		Employee e4 = Employee.maker().firstname("Employee Test4").gender('f')
 				.height(1.58F).weight(65.8F)
@@ -192,6 +195,7 @@ public class Principal {
 				.hiringDate(NOW.minus(Period.ofYears(25).minusMonths(7)))
 				.done();
 		e4.setJobFunction(JobFunctions.ENG_SR);
+		e4.setPartner(e1);
 		
 		List<Employee> employees = List.of(e1, e2, e3, e4);
 		

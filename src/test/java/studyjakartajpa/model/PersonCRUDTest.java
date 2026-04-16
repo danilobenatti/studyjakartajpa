@@ -63,16 +63,17 @@ class PersonCRUDTest extends EntityManagerTest {
 		Person person = Person.maker().firstname("Person Include Test2")
 				.gender('m').weight(82.5F).height(1.83F)
 				.birthdate(LocalDate.of(1990, Month.JANUARY, 1)).done();
-		person.diedNow();
-		person.setPartner(em.find(Person.class, 15L));
 		person.setEmail("pTest2@mail.com");
 		person.setPhone('M', "(19)98989-9898");
+		person.diedNow();
+		
+		DAO<Person> dao = new DAO<>(Person.class);
+		
+		person.setPartner(dao.findById(15L));
 		
 		person.setAddress(
 				Address.of("1486", "Buena Vista Dr", "Lake Buena Vista",
 						"Orlando", "FL", "USA", "32830", true, person));
-		
-		DAO<Person> dao = new DAO<>(Person.class);
 		
 		dao.addEntity(person).end();
 		
@@ -88,13 +89,14 @@ class PersonCRUDTest extends EntityManagerTest {
 			where p.weight > 0 and p.deathdate is null
 			""";
 		Query query = em.createQuery(qlString, Double.class);
-		Double avgPrice = (Double) query.getSingleResult();
+		query.setMaxResults(5);
+		Double avg = (Double) query.getSingleResult();
 		
-		BigDecimal avg = BigDecimal.valueOf(avgPrice).setScale(1,
+		BigDecimal avgBigDecimal = BigDecimal.valueOf(avg).setScale(1,
 				RoundingMode.HALF_UP);
 		
-		log.info(avg);
-		Assertions.assertEquals(74.7, avg.doubleValue());
+		log.info(avgBigDecimal);
+		Assertions.assertEquals(74.7, avgBigDecimal.doubleValue());
 	}
 	
 	@Test
@@ -243,7 +245,7 @@ class PersonCRUDTest extends EntityManagerTest {
 		List<Person> persons = query.getResultList();
 		
 		persons.forEach(log::info);
-		Assertions.assertEquals(3, persons.size());
+		Assertions.assertEquals(4, persons.size());
 	}
 	
 	@Test
@@ -268,7 +270,7 @@ class PersonCRUDTest extends EntityManagerTest {
 		List<Person> persons = query.getResultList();
 		
 		persons.forEach(log::info);
-		Assertions.assertEquals(5, persons.size());
+		Assertions.assertEquals(6, persons.size());
 	}
 	
 	@Test

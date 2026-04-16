@@ -4,9 +4,11 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -74,7 +76,7 @@ public class WishList implements Serializable {
 		columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateUpdate;
 	
-	@ManyToOne
+	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "person_id", nullable = false)
 	private Person person;
 	
@@ -88,23 +90,38 @@ public class WishList implements Serializable {
 	private Set<Product> products = new HashSet<>();
 	
 	public void setProduct(Product product) {
+		Objects.requireNonNull(products, "Products can't be null.");
 		this.products.add(product);
 	}
 	
-	public void setProducts(Set<Product> products) {
-		this.products.addAll(products);
-	}
-	
-	public void setProducts(List<Product> products) {
+	public void setProducts(Collection<Product> products) {
+		Objects.requireNonNull(products, "Products can't be null.");
 		this.products.addAll(products);
 	}
 	
 	public void setProducts(Product... products) {
+		Objects.requireNonNull(products, "Products can't be null.");
 		Set.of(products).forEach(this.products::add);
 	}
 	
-	@Builder(setterPrefix = "with")
+	@Builder(builderMethodName = "maker", buildMethodName = "done")
 	public static WishList of(String title, String description, Person person) {
+		
+		Objects.requireNonNull(title, "Title can't be null.");
+		title = title.trim();
+		if (title == null || title.isBlank())
+			throw new IllegalArgumentException("Title can't be null or blank.");
+		
+		Objects.requireNonNull(description, "Description can't be null.");
+		description = description.trim();
+		if (description == null || description.isBlank())
+			throw new IllegalArgumentException(
+					"Description can't be null or blank.");
+		
+		Objects.requireNonNull(person, "Person can't be null.");
+		if (person.getClass() == null)
+			throw new IllegalArgumentException("Person must be persisted.");
+		
 		WishList wishList = new WishList();
 		wishList.setTitle(title);
 		wishList.setDescription(description);
@@ -112,9 +129,9 @@ public class WishList implements Serializable {
 		return wishList;
 	}
 	
-	@Builder(setterPrefix = "with")
+	@Builder(builderMethodName = "maker", buildMethodName = "done")
 	public static WishList of(String title, String description, Person person,
-			Set<Product> products) {
+			Collection<Product> products) {
 		WishList wishList = new WishList();
 		wishList.setTitle(title);
 		wishList.setDescription(description);
@@ -130,7 +147,7 @@ public class WishList implements Serializable {
 		wishList.setTitle(title);
 		wishList.setDescription(description);
 		wishList.setPerson(person);
-		wishList.setProducts(products);
+		wishList.setProducts(products.length > 0 ? Set.of(products) : Set.of());
 		return wishList;
 	}
 	
@@ -149,10 +166,8 @@ public class WishList implements Serializable {
 	public BigDecimal getPriceTotal() {
 		Optional<BigDecimal> total = this.getProducts().stream()
 				.map(Product::getPriceWithDiscount).reduce(BigDecimal::add);
-		if (total.isPresent()) {
+		if (total.isPresent())
 			return total.get();
-		} else {
-			return BigDecimal.ZERO;
-		}
+		return BigDecimal.ZERO;
 	}
 }

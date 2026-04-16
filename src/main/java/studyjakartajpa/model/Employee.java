@@ -41,7 +41,6 @@ public class Employee extends Person {
 	
 	public void setJobFunction(JobFunctions jobFunction) {
 		this.jobFunction = jobFunction.getCode();
-		
 	}
 	
 	public JobFunctions getJobFunction() {
@@ -49,7 +48,7 @@ public class Employee extends Person {
 	}
 	
 	@Builder.Default
-	@Column(name = "salary", precision = 18, scale = 2)
+	@Column(name = "salary", precision = 18, scale = 2, nullable = false)
 	private BigDecimal salary = BigDecimal.ZERO;
 	
 	public void setSalary(BigDecimal salary) {
@@ -84,7 +83,7 @@ public class Employee extends Person {
 		sb.append("register", this.getRegister());
 		sb.append("jobFunction", this.getJobFunction().getDescription());
 		sb.append("salary", this.getSalaryFormatted());
-		sb.append("hiringDate", dtf.format(this.getHiringDate()));
+		sb.append("hiringDate", DTF.get().format(this.getHiringDate()));
 		return sb.toString();
 	}
 	

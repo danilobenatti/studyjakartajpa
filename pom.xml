@@ -9,13 +9,13 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.project.sourceRoots.warningsDisabled>true</maven.project.sourceRoots.warningsDisabled>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
 		<jakarta.version>3.2.0</jakarta.version>
-		<eclipselink.version>4.0.9</eclipselink.version>
-		<postgresql.version>42.7.8</postgresql.version>
-		<lombok.version>1.18.42</lombok.version>
+		<eclipselink.version>5.0.0</eclipselink.version>
+		<postgresql.version>42.7.10</postgresql.version>
+		<lombok.version>1.18.44</lombok.version>
 		<apache.commons-lang3.version>3.20.0</apache.commons-lang3.version>
-		<log4j-api-version>2.25.3</log4j-api-version>
+		<log4j-api.version>2.25.3</log4j-api.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -57,7 +57,7 @@
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
-			<version>${log4j-api-version}</version>
+			<version>${log4j-api.version}</version>
 		</dependency>
 	</dependencies>
 	<build>

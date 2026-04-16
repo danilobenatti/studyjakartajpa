@@ -108,10 +108,10 @@ class WishListCRUDTest extends EntityManagerTest {
 		list.forEach(o -> log.info(Arrays.toString(o)));
 		Assertions.assertEquals(2, list.size());
 		
-		List<WishListBalance> wishListBalances = query.getResultList().stream()
+		List<WishListBalance> wlb = query.getResultList().stream()
 				.map(WishListBalance::new).toList();
-		wishListBalances.forEach(log::info);
-		Assertions.assertEquals(2, wishListBalances.size());
+		wlb.forEach(log::info);
+		Assertions.assertEquals(2, wlb.size());
 		
 	}
 	

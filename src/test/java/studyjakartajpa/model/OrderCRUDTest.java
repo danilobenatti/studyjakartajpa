@@ -48,8 +48,9 @@ class OrderCRUDTest extends EntityManagerTest {
 		
 		o1.setOrderItems(i1, i2, i3, i4);
 		
-		Order o2 = Order.of(LocalDate.now().plusDays(30), person, 0.1F,
-				OrderStatus.WAITING);
+		Order o2 = Order.maker().billingDate(LocalDate.now().plusDays(30))
+				.person(person).discount(0.1F).status(OrderStatus.WAITING)
+				.done();
 		
 		o2.setOrderItem(OrderItem.of(o2, prd3, 1));
 		
@@ -115,7 +116,7 @@ class OrderCRUDTest extends EntityManagerTest {
 		List<OrderSale> results = query.getResultList();
 		
 		results.forEach(log::info);
-		Assertions.assertEquals(1, results.size());
+		Assertions.assertEquals(2, results.size());
 	}
 	
 	@Test
@@ -131,7 +132,7 @@ class OrderCRUDTest extends EntityManagerTest {
 		List<OrderSale> results = query.getResultList();
 		
 		results.forEach(log::info);
-		Assertions.assertEquals(1, results.size());
+		Assertions.assertEquals(2, results.size());
 	}
 	
 	@Test
@@ -161,7 +162,7 @@ class OrderCRUDTest extends EntityManagerTest {
 		
 		List<OrderSale> results = query.getResultList();
 		results.forEach(log::info);
-		Assertions.assertEquals(3, results.size());
+		Assertions.assertEquals(4, results.size());
 	}
 	
 	@Test
@@ -202,7 +203,7 @@ class OrderCRUDTest extends EntityManagerTest {
 		List<OrderSale> os = query.getResultList().stream().map(OrderSale::new)
 				.toList();
 		os.forEach(log::info);
-		Assertions.assertEquals(5, os.size());
+		Assertions.assertEquals(6, os.size());
 	}
 	
 	@Test

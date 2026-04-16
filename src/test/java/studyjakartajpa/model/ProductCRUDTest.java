@@ -31,7 +31,8 @@ class ProductCRUDTest extends EntityManagerTest {
 	void includeProductTest() {
 		
 		Product prd = Product.of("Title Product Test1 Include",
-				"Description Product Test1", 0.15F, 15.5, ProductUnit.UNITY);
+				"Description Product Test1", new BigDecimal("0.15"), 15.5,
+				ProductUnit.UNITY);
 		prd.setValidity(18, ChronoUnit.MONTHS);
 		
 		em.getTransaction().begin();
@@ -59,12 +60,13 @@ class ProductCRUDTest extends EntityManagerTest {
 		DAO<Product> dao = new DAO<>(Product.class);
 		
 		Product product1 = Product.of("Title Product Test2 Include",
-				"Description Product Test2", 0.15F, 15.5, ProductUnit.UNITY);
+				"Description Product Test2", new BigDecimal("0.15"), 15.5,
+				ProductUnit.UNITY);
 		product1.setValidity(18, ChronoUnit.MONTHS);
 		
 		Product product2 = Product.maker().title("Title Product Test3 Include")
 				.description("Description Product Test3")
-				.unitPrice(Double.valueOf("15.5")).unit(ProductUnit.UNITY)
+				.unitPrice(new BigDecimal("15.5")).unit(ProductUnit.UNITY)
 				.done();
 		product2.setValidity(18, ChronoUnit.MONTHS);
 		
@@ -86,11 +88,11 @@ class ProductCRUDTest extends EntityManagerTest {
 		
 		Root<Product> root = cq.from(Product.class);
 		
-		cq.select(root)
-				.where(cb.equal(root.get(Product_.title), "Title Product 4"));
+		cq.select(root).where(cb.equal(root.get(Product_.title), "Title Product 4"));
 		
 		Product product = em.createQuery(cq).getSingleResult();
 		
+		log.info(product);
 		Assertions.assertTrue(
 				StringUtils.containsAny("product 4", product.getTitle()));
 		Assertions.assertEquals(41.0, product.getPriceWithDiscount()
@@ -115,7 +117,7 @@ class ProductCRUDTest extends EntityManagerTest {
 		Product product = em.find(Product.class, 11L);
 		product.setTitle("Title Product 2 Update");
 		product.setDescription("Description Product 2 Update");
-		product.setDiscount(0.5F);
+		product.setDiscount(new BigDecimal("0.5"));
 		
 		em.getTransaction().begin();
 		em.merge(product);
@@ -144,7 +146,7 @@ class ProductCRUDTest extends EntityManagerTest {
 		
 		update.set(Product_.title, "Title Product 2 Update2");
 		update.set(Product_.description, "Description Product 2 Update2");
-		update.set(Product_.discount, 0.5F);
+		update.set(Product_.discount, new BigDecimal("0.5"));
 		
 		update.where(cb.equal(root.get(Product_.id), 11L));
 		
@@ -164,7 +166,8 @@ class ProductCRUDTest extends EntityManagerTest {
 	@Order(7)
 	void deleteProductTest() {
 		Product product = em.find(Product.class, 100L);
-		System.out.println(product);
+		log.info(product);
+		
 		if (product != null) {
 			em.getTransaction().begin();
 			em.remove(product);
@@ -179,7 +182,7 @@ class ProductCRUDTest extends EntityManagerTest {
 		DAO<Product> dao = new DAO<>(Product.class);
 		
 		Product product = dao.findById(101L);
-		System.out.println(product);
+		log.info(product);
 		
 		if (product != null)
 			dao.deleteEntity(product).end();

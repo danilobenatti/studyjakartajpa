@@ -7,12 +7,14 @@ import java.time.Period;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -45,6 +47,9 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -71,24 +76,27 @@ import studyjakartajpa.util.Imc;
 @DiscriminatorColumn(name = "peType",
 	discriminatorType = DiscriminatorType.CHAR, length = 1)
 @DiscriminatorValue(value = "P")
-@Table(name = "persons", catalog = "jpaforbeginners", schema = "public")
+@Table(name = "persons", catalog = "jpaforbeginners", schema = "public",
+	uniqueConstraints = @UniqueConstraint(name = "uk_persons_partner_id",
+		columnNames = { "partner_id" }))
 @NamedNativeQuery(name = "Persons.findAllLive", query = """
 	select * from persons p where p.deathdate is null limit ?1 offset ?2
 	""", resultClass = Person.class)
 public class Person implements Serializable {
+	private static final long serialVersionUID = 1L;
 	
-	static LocalDate now = LocalDate.now();
+	private static final ZoneId ZONE_ID = ZoneId.systemDefault();
 	
 	static Locale locale = Locale.getDefault();
+	
+	static final ThreadLocal<DateTimeFormatter> DTF = ThreadLocal.withInitial(
+			() -> DateTimeFormatter.ofPattern("d/MMM/yyyy", locale));
+	
+	static LocalDate today() { return LocalDate.now(ZONE_ID); }
 	
 	static final char BLACK_STAR = '\u272E'; // Heavy Outlined Black Star
 	
 	static final char LATIN_CROSS = '\u271F'; // Outlined Latin Cross
-	
-	final transient DateTimeFormatter dtf = DateTimeFormatter
-			.ofPattern("d/MMM/yyyy", locale);
-	
-	private static final long serialVersionUID = 1L;
 	
 	@Id
 	@EqualsAndHashCode.Include
@@ -99,6 +107,8 @@ public class Person implements Serializable {
 		generator = "persons_seq_generator")
 	private long id;
 	
+	@NotBlank(message = "Firstname is mandatory")
+	@NotEmpty(message = "Firstname cannot be empty")
 	@NonNull
 	@Column(name = "firstname", nullable = false, length = 150)
 	private String firstname;
@@ -107,8 +117,13 @@ public class Person implements Serializable {
 	@Column(name = "gender", nullable = false)
 	private Character gender;
 	
+	public void setGender(Character gender) {
+		this.gender = Character.toUpperCase(gender);
+	}
+	
 	void toUpperCaseGender() {
-		this.gender = Character.toUpperCase(this.gender);
+		if (this.gender != null)
+			this.gender = Character.toUpperCase(this.gender);
 	}
 	
 	@Builder.Default
@@ -119,7 +134,8 @@ public class Person implements Serializable {
 	@Column(name = "height", columnDefinition = "NUMERIC(3,2) default 0.0")
 	private float height = 0.0F;
 	
-	@OneToOne
+	@OneToOne(cascade = { CascadeType.MERGE, CascadeType.REFRESH },
+		fetch = FetchType.EAGER)
 	@JoinColumn(name = "partner_id", referencedColumnName = "id",
 		nullable = true,
 		foreignKey = @ForeignKey(name = "FK_persons_partner_id",
@@ -127,8 +143,15 @@ public class Person implements Serializable {
 	private Person partner;
 	
 	public void setPartner(Person person) {
+		// fix bidirectional link and allow unlinking
+		if (this.partner == person)
+			return;
+		Person old = this.partner;
 		this.partner = person;
-		person.partner = this.partner;
+		if (old != null && old.partner == this)
+			old.partner = null;
+		if (person != null && person.partner != this)
+			person.partner = this;
 	}
 	
 	@Builder.Default
@@ -151,7 +174,7 @@ public class Person implements Serializable {
 	}
 	
 	public void setPhones(Map<Character, String> phones) {
-		if (isAlive())
+		if (isAlive() && phones != null)
 			this.phones.putAll(phones);
 	}
 	
@@ -163,16 +186,22 @@ public class Person implements Serializable {
 	private List<Address> addresses = new ArrayList<>();
 	
 	public boolean setAddress(Address address) {
+		if (address == null)
+			return false;
 		address.setPerson(this);
 		return this.addresses.add(address);
 	}
 	
 	public boolean setAddresses(List<Address> addresses) {
+		if (addresses == null)
+			return false;
 		addresses.forEach(a -> a.setPerson(this));
 		return this.addresses.addAll(addresses);
 	}
 	
 	public boolean setAddresses(Address... addresses) {
+		if (addresses == null)
+			return false;
 		List.of(addresses).forEach(a -> a.setPerson(this));
 		return this.addresses.addAll(List.of(addresses));
 	}
@@ -187,20 +216,23 @@ public class Person implements Serializable {
 	private Set<String> emails = new HashSet<>();
 	
 	public void setEmail(String email) {
-		this.emails.add(email);
+		if (email != null)
+			this.emails.add(email);
 	}
 	
 	public void setEmails(Set<String> emails) {
-		this.emails.addAll(emails);
+		if (emails != null)
+			this.emails.addAll(emails);
 	}
 	
 	public void setEmails(String... emails) {
-		Set.of(emails).forEach(this.emails::add);
+		if (emails != null)
+			Set.of(emails).forEach(this.emails::add);
 	}
 	
 	@Builder.Default
 	@CascadeOnDelete
-	@OneToMany(mappedBy = "person", fetch = FetchType.EAGER,
+	@OneToMany(mappedBy = "person", fetch = FetchType.LAZY,
 		orphanRemoval = true, cascade = CascadeType.REMOVE)
 	private Set<WishList> wishLists = new HashSet<>();
 	
@@ -213,7 +245,8 @@ public class Person implements Serializable {
 	}
 	
 	public void setOrders(Order... orders) {
-		List.of(orders).forEach(this::setOrder);
+		if (orders != null)
+			List.of(orders).forEach(this::setOrder);
 	}
 	
 	@NonNull
@@ -222,6 +255,11 @@ public class Person implements Serializable {
 	
 	@Column(name = "deathdate")
 	private LocalDate deathdate;
+	
+	private void setDeathdate(LocalDate deathdate) {
+		if (isValidDeathDate(deathdate))
+			this.deathdate = deathdate;
+	}
 	
 	@Setter(value = AccessLevel.PROTECTED)
 	@Column(name = "dateinsert", updatable = false,
@@ -257,8 +295,8 @@ public class Person implements Serializable {
 			sb.append("phones", listPhones());
 		if (!this.getEmails().isEmpty())
 			sb.append("emails", this.getEmails());
-		if (!this.getAddresses().isEmpty())
-			sb.append(getMainAddress());
+		if (!this.getAddresses().isEmpty() && getMainAddress().isPresent())
+			sb.append(getMainAddress().map(Object::toString).get());
 		if (this.getPartner() != null) {
 			sb.append("partner", this.getPartner().getFirstname());
 		}
@@ -266,21 +304,20 @@ public class Person implements Serializable {
 	}
 	
 	public List<String> listPhones() {
+		if (this.phones.isEmpty() || this.phones.values().stream().allMatch(StringUtils::isBlank))
+			return Collections.emptyList();
 		return this.phones.entrySet().stream()
 				.map(e -> StringUtils.joinWith("=", e.getKey(), e.getValue()))
 				.toList();
 	}
 	
-	public Address getMainAddress() {
-		Optional<Address> address = this.addresses.stream()
+	public Optional<Address> getMainAddress() {
+		return this.addresses.stream().filter(Objects::nonNull)
 				.filter(Address::isPrincipal).findFirst();
-		if (address.isPresent())
-			return address.get();
-		return null;
 	}
 	
 	public boolean isAlive() {
-		return this.getDeathdate() == null && this.getBirthdate() != null;
+		return Objects.nonNull(this.getBirthdate()) && Objects.isNull(this.getDeathdate());
 	}
 	
 	public Character getSymbol() {
@@ -288,11 +325,13 @@ public class Person implements Serializable {
 	}
 	
 	public int getAge() {
-		if (isAlive() && this.getBirthdate().isBefore(now))
-			return Period.between(this.getBirthdate(), now).getYears();
-		else
+		if (isAlive() && this.getBirthdate().isBefore(today()))
+			return Period.between(this.getBirthdate(), today()).getYears();
+		else if (this.getDateCreate() != null)
 			return Period.between(this.getBirthdate(), this.getDeathdate())
 					.getYears();
+		else
+			return 0;
 	}
 	
 	public String getAgeWithSymbol() {
@@ -301,33 +340,36 @@ public class Person implements Serializable {
 	
 	public String getAgeWithSymbolFull() {
 		var sb = new StringBuilder().append(this.getAge()).append("(")
-				.append(BLACK_STAR).append(dtf.format(this.getBirthdate()));
+				.append(BLACK_STAR)
+				.append(DTF.get().format(this.getBirthdate()));
 		if (!isAlive())
-			sb.append("," + LATIN_CROSS + dtf.format(this.getDeathdate()));
+			sb.append(
+					"," + LATIN_CROSS + DTF.get().format(this.getDeathdate()));
 		return sb.append(")").toString();
 	}
 	
-	public boolean validyDeathDate(LocalDate deathdate) {
-		return deathdate.isAfter(this.getBirthdate());
+	public boolean isValidDeathDate(LocalDate deathdate) {
+		return deathdate != null && deathdate.isAfter(this.getBirthdate());
 	}
 	
 	public void diedNow() {
-		if (isAlive() && validyDeathDate(now))
-			this.setDeathdate(now);
+		if (isAlive() && isValidDeathDate(today()))
+			this.setDeathdate(today());
 	}
 	
 	public void diedIn(LocalDate deathDate) {
-		if (isAlive() && validyDeathDate(deathDate))
+		if (isAlive() && isValidDeathDate(deathDate))
 			this.setDeathdate(deathDate);
 	}
 	
 	public void diedIn(Date deathDate) {
-		diedIn(deathDate.toInstant().atZone(ZoneId.systemDefault())
-				.toLocalDate());
+		if (deathDate != null)
+			diedIn(deathDate.toInstant().atZone(ZONE_ID).toLocalDate());
 	}
 	
 	public void diedIn(Date deathDate, ZoneId zone) {
-		diedIn(deathDate.toInstant().atZone(zone).toLocalDate());
+		if (deathDate != null && zone != null)
+			diedIn(deathDate.toInstant().atZone(zone).toLocalDate());
 	}
 	
 	public String calcIMC() {

@@ -1,7 +1,7 @@
 package studyjakartajpa.util;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.NumberFormat;
 import java.util.Locale;
 
 import studyjakartajpa.model.Person;
@@ -15,10 +15,18 @@ import studyjakartajpa.model.Person;
  */
 public class Imc {
 	
-	static NumberFormat nf = NumberFormat.getInstance(Locale.getDefault());
-	
 	private Imc() {
 	}
+	
+	private static final Locale LOCALE = Locale.getDefault();
+	
+	private static final double[] FEMALE_THRESHOLDS = { 19.1, 25.8, 27.3, 32.3 };
+	private static final double[] MALE_THRESHOLDS = { 20.7, 26.4, 27.8, 31.1 };
+	
+	private static final String[] LABELS = { "under weight", "at ideal weight",
+			"a little overweight", "over ideal weight", "is obese" };
+	
+	private static final String UNKNOWN = "unknown";
 	
 	/**
 	 * Method that calculates the <b>body mass index</b> (BMI).
@@ -28,13 +36,15 @@ public class Imc {
 	 * @return value Double BMI value.
 	 */
 	public static double calcImc(float weight, float height) {
-		nf.setMaximumFractionDigits(1);
-		nf.setMinimumFractionDigits(1);
-		nf.setRoundingMode(RoundingMode.HALF_EVEN);
-		double value = 0;
+		BigDecimal wt = new BigDecimal(Float.toString(weight));
+		BigDecimal ht = new BigDecimal(Float.toString(height));
+		
+		double vl = 0.0;
+		
 		if (weight > 0 && height > 0)
-			value = weight / Math.pow(height, 2);
-		return Float.valueOf(nf.format(value));
+			vl = wt.divide(ht.pow(2), 1, RoundingMode.HALF_EVEN).doubleValue();
+		
+		return vl;
 	}
 	
 	/**
@@ -43,25 +53,23 @@ public class Imc {
 	 * 
 	 * @param weight Person's weight in kilograms.
 	 * @param height Height of the person in meters.
-	 * @param sex    Gender of the person, male or female only.
+	 * @param gender Gender of the person, male or female only.
 	 * @return info BMI calculation information.
 	 * @throws info NullPointException
 	 * @since 1.0
 	 */
-	public static String imcByGender(float weight, float height, char sex) {
-		return switch (sex) {
-			case 'f', 'F' -> femaleImc(calcImc(weight, height));
-			case 'm', 'M' -> maleImc(calcImc(weight, height));
-			default -> null;
+	public static String imcByGender(float weight, float height, char gender) {
+		return switch (Character.toLowerCase(gender)) {
+			case 'f' -> femaleImc(calcImc(weight, height));
+			case 'm' -> maleImc(calcImc(weight, height));
+			default -> UNKNOWN;
 		};
 	}
 	
 	public static String imcByGender(Person p) {
-		return switch (p.getGender()) {
-			case 'f', 'F' -> femaleImc(calcImc(p.getWeight(), p.getHeight()));
-			case 'm', 'M' -> maleImc(calcImc(p.getWeight(), p.getHeight()));
-			default -> null;
-		};
+		if (p == null)
+			return UNKNOWN;
+		return imcByGender(p.getWeight(), p.getHeight(), p.getGender());
 	}
 	
 	/**
@@ -71,21 +79,7 @@ public class Imc {
 	 * @return info BMI calculation information for females.
 	 */
 	public static String femaleImc(double value) {
-		String info = null;
-		if (value <= 0 || Double.isNaN(value)) {
-			info = "unknown";
-		} else if (value > 0 && value < 19.1) {
-			info = "[%.1f] under weight".formatted(value);
-		} else if (value > 19.2 && value < 25.8) {
-			info = "[%.1f] at ideal weight".formatted(value);
-		} else if (value > 25.9 && value < 27.3) {
-			info = "[%.1f] a little overweight".formatted(value);
-		} else if (value > 27.4 && value < 32.3) {
-			info = "[%.1f] over ideal weight".formatted(value);
-		} else {
-			info = "[%.1f] is obese".formatted(value);
-		}
-		return info;
+		return classify(value, FEMALE_THRESHOLDS, LABELS);
 	}
 	
 	/**
@@ -95,21 +89,21 @@ public class Imc {
 	 * @return info BMI calculation information for males.
 	 */
 	public static String maleImc(double value) {
-		String info = null;
-		if (value <= 0 || Double.isNaN(value)) {
-			info = "unknown";
-		} else if (value > 0 && value < 20.7) {
-			info = "[%.1f] under weight".formatted(value);
-		} else if (value > 20.8 && value < 26.4) {
-			info = "[%.1f] at ideal weight".formatted(value);
-		} else if (value > 26.5 && value < 27.8) {
-			info = "[%.1f] a little overweight".formatted(value);
-		} else if (value > 27.9 && value < 31.1) {
-			info = "[%.1f] over ideal weight".formatted(value);
-		} else {
-			info = "[%.1f] is obese".formatted(value);
-		}
-		return info;
+		return classify(value, MALE_THRESHOLDS, LABELS);
 	}
+	
+	//@formatter:off
+	private static String classify(double value, double[] thresholds, String[] labels) {
+		
+		if (value <= 0 || Double.isNaN(value))
+			return UNKNOWN;
+		
+		for (int i = 0; i < thresholds.length; i++)
+			if (value < thresholds[i])
+				return String.format(LOCALE, "[%.1f] %s", value, labels[i]);
+		
+		return String.format(LOCALE, "[%.1f] %s", value, labels[labels.length - 1]);
+	}
+	//@formatter:on
 	
 }
