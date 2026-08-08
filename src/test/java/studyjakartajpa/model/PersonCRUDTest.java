@@ -30,7 +30,7 @@ class PersonCRUDTest extends EntityManagerTest {
 	@Test
 	@Order(1)
 	void includePersonTest() {
-		Person person = Person.maker().firstname("Person Include Test")
+		Person person = Person.maker().firstName("Person Include Test")
 				.gender('m').weight(82.5F).height(1.83F)
 				.birthdate(LocalDate.of(1990, Month.FEBRUARY, 1)).done();
 		person.diedNow();
@@ -47,7 +47,7 @@ class PersonCRUDTest extends EntityManagerTest {
 		
 		String qlString = """
 				select p from Person p
-				where lower(p.firstname) like lower(concat('%', :name, '%'))
+				where lower(p.firstName) like lower(concat('%', :name, '%'))
 			""";
 		Person p = em.createQuery(qlString, Person.class)
 				.setParameter("name", "person includ").getResultList().stream()
@@ -60,7 +60,7 @@ class PersonCRUDTest extends EntityManagerTest {
 	@Test
 	@Order(2)
 	void includePersonTest2() {
-		Person person = Person.maker().firstname("Person Include Test2")
+		Person person = Person.maker().firstName("Person Include Test2")
 				.gender('m').weight(82.5F).height(1.83F)
 				.birthdate(LocalDate.of(1990, Month.JANUARY, 1)).done();
 		person.setEmail("pTest2@mail.com");
@@ -78,7 +78,7 @@ class PersonCRUDTest extends EntityManagerTest {
 		dao.addEntity(person).end();
 		
 		log.info(person);
-		Assertions.assertEquals("Person Include Test2", person.getFirstname());
+		Assertions.assertEquals("Person Include Test2", person.getFirstName());
 	}
 	
 	@Test
@@ -148,7 +148,7 @@ class PersonCRUDTest extends EntityManagerTest {
 		Person person = dao.searchById(10L);
 		dao.end();
 		log.info(person);
-		Assertions.assertEquals("John", person.getFirstname());
+		Assertions.assertEquals("John", person.getFirstName());
 	}
 	
 	@Test
@@ -158,7 +158,7 @@ class PersonCRUDTest extends EntityManagerTest {
 		Person person = dao.findById(10L);
 		dao.end();
 		log.info(person);
-		Assertions.assertEquals("John", person.getFirstname());
+		Assertions.assertEquals("John", person.getFirstName());
 	}
 	
 	@Test
@@ -177,13 +177,13 @@ class PersonCRUDTest extends EntityManagerTest {
 		// lower(p.firstname) like lower(concat('%', :name, '%'))
 		String qlString = """
 				select p from Person p
-				where lower(p.firstname) like lower(concat('%', :name, '%'))
+				where lower(p.firstName) like lower(concat('%', :name, '%'))
 			""";
 		Query query = em.createQuery(qlString);
 		query.setParameter("name", "MARY");
 		Person person = (Person) query.getSingleResult();
 		
-		person.setFirstname("Mary Update");
+		person.setFirstName("Mary Update");
 		person.setGender('f'); // callback it's work
 		person.getAddresses().clear();
 		person.getEmails().clear();
@@ -208,11 +208,11 @@ class PersonCRUDTest extends EntityManagerTest {
 		
 		Root<Person> root = update.from(Person.class);
 		
-		update.set(root.get(Person_.firstname), "John Update");
+		update.set(root.get(Person_.firstName), "John Update");
 		update.set(root.get(Person_.gender), 'm'); // callback it's not work
 		update.set(root.get(Person_.deathdate), LocalDate.now());
 		
-		Predicate like = cb.like(root.get(Person_.firstname), "John");
+		Predicate like = cb.like(root.get(Person_.firstName), "John");
 		
 		update.where(like);
 		

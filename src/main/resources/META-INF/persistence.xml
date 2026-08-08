@@ -8,7 +8,8 @@
 		<!-- <non-jta-data-source></non-jta-data-source> -->
 		<!-- By default your mappings can be defined in orm.xml file, -->
 		<!-- which is discovered automatically. -->
-		<mapping-file>META-INF/orm.xml</mapping-file>
+		<mapping-file>META-INF/person.xml</mapping-file>
+		<mapping-file>META-INF/order.xml</mapping-file>
 		<!-- Enables auto discovery of persistent classes, -->
 		<!-- otherwise they must be listed using <class> -->
 		<class>studyjakartajpa.model.Person</class>
@@ -23,7 +24,7 @@
 		<properties>
 			<!-- database connection -->
 			<property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver" />
-			<property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/jpaforbeginners" />
+			<property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/jpaforbeginners?reWriteBatchedInserts=true" />
 			<property name="jakarta.persistence.jdbc.user" value="postgres" />
 			<property name="jakarta.persistence.jdbc.password" value="123456" />
 			<property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create" />

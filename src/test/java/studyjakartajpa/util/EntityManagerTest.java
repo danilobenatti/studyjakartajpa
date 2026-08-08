@@ -24,15 +24,13 @@ public class EntityManagerTest extends EntityManagerFactoryTest {
 	@BeforeEach
 	void setUpBeforeEach() {
 		em = emf.createEntityManager();
-		Configurator.initialize(EntityManagerTest.class.getName(),
-				"./src/main/resources/log4j2.properties");
 	}
 	
 	@AfterEach
 	void tearDownAfterEach() {
-		if (em.isOpen())
+		if (em.isOpen()) {
 			em.close();
-		log.traceExit();
+		}
 	}
 	
 }

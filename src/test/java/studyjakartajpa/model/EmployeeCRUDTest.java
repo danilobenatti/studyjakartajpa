@@ -35,7 +35,47 @@ class EmployeeCRUDTest extends EntityManagerTest {
 		dao.addEntity(e).end();
 		
 		log.info(e);
-		Assertions.assertEquals("Employee Include Test1", e.getFirstname());
+		Assertions.assertEquals("Employee Include Test1", e.getFirstName());
 	}
 	
+	@Test
+	@Order(2)
+	void updateEmployeeTest() {
+		DAO<Employee> dao = new DAO<>(Employee.class);
+		
+		Employee e = dao.findById(10L);
+		
+		e.setWeight(89.8F);
+		e.setHeight(1.95F);
+		
+		dao.updateEntity(e).end();
+		
+		log.info(e);
+		Assertions.assertEquals("[23.6] at ideal weight", e.calcIMC());
+	}
+	
+	@Test
+	@Order(3)
+	void deleteEmployeeTest() {
+		DAO<Employee> dao = new DAO<>(Employee.class);
+		
+		Employee e = dao.findById(11L);
+		
+		dao.deleteEntity(e);
+		
+		log.info(e);
+		Assertions.assertNull(dao.findById(1L));
+		dao.end();
+	}
+	
+	@Test
+	@Order(4)
+	void findEmployeeByIdTest() {
+		DAO<Employee> dao = new DAO<>(Employee.class);
+		
+		Employee e = dao.findById(100L);
+		
+		log.info(e);
+		Assertions.assertNull(e);
+	}
 }

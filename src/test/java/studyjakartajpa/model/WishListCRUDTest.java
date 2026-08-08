@@ -85,7 +85,7 @@ class WishListCRUDTest extends EntityManagerTest {
 		Expression<BigDecimal> average = cb.function("round", BigDecimal.class,
 				cb.avg(joinProduct.get(Product_.unitPrice)), cb.literal(2));
 		
-		cq.select(cb.tuple(joinPerson.get(Person_.firstname).alias("firstname"),
+		cq.select(cb.tuple(joinPerson.get(Person_.firstName).alias("firstname"),
 				root.get(WishList_.title).alias("title"),
 				cb.sum(joinProduct.get(Product_.unitPrice)).alias("total"),
 				average.alias("average"),

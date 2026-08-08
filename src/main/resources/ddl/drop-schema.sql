@@ -20,8 +20,8 @@ DROP TABLE EMPLOYEE CASCADE
 DROP TABLE jpaforbeginners.public.persons_emails CASCADE
 DROP TABLE jpaforbeginners.public.persons_phones CASCADE
 DROP TABLE jpaforbeginners.public.wishlists_products CASCADE
+DROP SEQUENCE jpaforbeginners.public.persons_id_seq
 DROP SEQUENCE jpaforbeginners.public.orders_id_seq
+DROP SEQUENCE jpaforbeginners.public.addresses_id_seq
 DROP SEQUENCE jpaforbeginners.public.wishlists_id_seq
 DROP SEQUENCE jpaforbeginners.public.products_id_seq
-DROP SEQUENCE jpaforbeginners.public.persons_id_seq
-DROP SEQUENCE jpaforbeginners.public.addresses_id_seq

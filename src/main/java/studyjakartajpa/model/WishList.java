@@ -156,7 +156,7 @@ public class WishList implements Serializable {
 		List<String> listProducts = getProducts().stream()
 				.map(Product::getProductInfo).sorted().toList();
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("person", this.getPerson().getFirstname())
+				.append("person", this.getPerson().getFirstName())
 				.append("title", this.getTitle())
 				.append("description", this.getDescription())
 				.append("total", CF.format(this.getPriceTotal()))

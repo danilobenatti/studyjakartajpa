@@ -56,7 +56,6 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
@@ -73,7 +72,7 @@ import studyjakartajpa.util.Imc;
 @Entity
 @EntityListeners(value = { AuditListener.class })
 @Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "peType",
+@DiscriminatorColumn(name = "peType", columnDefinition = "char(1)",
 	discriminatorType = DiscriminatorType.CHAR, length = 1)
 @DiscriminatorValue(value = "P")
 @Table(name = "persons", catalog = "jpaforbeginners", schema = "public",
@@ -85,14 +84,14 @@ import studyjakartajpa.util.Imc;
 public class Person implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
-	private static final ZoneId ZONE_ID = ZoneId.systemDefault();
-	
 	static Locale locale = Locale.getDefault();
 	
-	static final ThreadLocal<DateTimeFormatter> DTF = ThreadLocal.withInitial(
-			() -> DateTimeFormatter.ofPattern("d/MMM/yyyy", locale));
+	static final DateTimeFormatter DTF = DateTimeFormatter
+			.ofPattern("d/MMM/yyyy", locale);
 	
-	static LocalDate today() { return LocalDate.now(ZONE_ID); }
+	static LocalDate today() {
+		return LocalDate.now(ZoneId.systemDefault());
+	}
 	
 	static final char BLACK_STAR = '\u272E'; // Heavy Outlined Black Star
 	
@@ -109,11 +108,11 @@ public class Person implements Serializable {
 	
 	@NotBlank(message = "Firstname is mandatory")
 	@NotEmpty(message = "Firstname cannot be empty")
-	@NonNull
+	@lombok.NonNull
 	@Column(name = "firstname", nullable = false, length = 150)
-	private String firstname;
+	private String firstName;
 	
-	@NonNull
+	@lombok.NonNull
 	@Column(name = "gender", nullable = false)
 	private Character gender;
 	
@@ -249,7 +248,7 @@ public class Person implements Serializable {
 			List.of(orders).forEach(this::setOrder);
 	}
 	
-	@NonNull
+	@lombok.NonNull
 	@Column(name = "birthdate", nullable = false)
 	private LocalDate birthdate;
 	
@@ -275,7 +274,7 @@ public class Person implements Serializable {
 			LocalDate birthdate, Map<Character, String> phones,
 			Set<String> emails) {
 		Person person = new Person();
-		person.setFirstname(firstname);
+		person.setFirstName(firstname);
 		person.setGender(gender);
 		person.setBirthdate(birthdate);
 		person.setPhones(phones);
@@ -287,7 +286,7 @@ public class Person implements Serializable {
 	public String toString() {
 		var sb = new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE);
 		sb.append("id", this.getId());
-		sb.append("name", this.getFirstname());
+		sb.append("name", this.getFirstName());
 		sb.append("gender", this.getGender());
 		sb.append("BMI", Imc.imcByGender(this));
 		sb.append("age", getAgeWithSymbolFull());
@@ -298,13 +297,14 @@ public class Person implements Serializable {
 		if (!this.getAddresses().isEmpty() && getMainAddress().isPresent())
 			sb.append(getMainAddress().map(Object::toString).get());
 		if (this.getPartner() != null) {
-			sb.append("partner", this.getPartner().getFirstname());
+			sb.append("partner", this.getPartner().getFirstName());
 		}
 		return sb.toString();
 	}
 	
 	public List<String> listPhones() {
-		if (this.phones.isEmpty() || this.phones.values().stream().allMatch(StringUtils::isBlank))
+		if (this.phones.isEmpty()
+				|| this.phones.values().stream().allMatch(StringUtils::isBlank))
 			return Collections.emptyList();
 		return this.phones.entrySet().stream()
 				.map(e -> StringUtils.joinWith("=", e.getKey(), e.getValue()))
@@ -317,7 +317,8 @@ public class Person implements Serializable {
 	}
 	
 	public boolean isAlive() {
-		return Objects.nonNull(this.getBirthdate()) && Objects.isNull(this.getDeathdate());
+		return Objects.nonNull(this.getBirthdate())
+				&& Objects.isNull(this.getDeathdate());
 	}
 	
 	public Character getSymbol() {
@@ -340,11 +341,10 @@ public class Person implements Serializable {
 	
 	public String getAgeWithSymbolFull() {
 		var sb = new StringBuilder().append(this.getAge()).append("(")
-				.append(BLACK_STAR)
-				.append(DTF.get().format(this.getBirthdate()));
+				.append(BLACK_STAR).append(DTF.format(this.getBirthdate()));
 		if (!isAlive())
-			sb.append(
-					"," + LATIN_CROSS + DTF.get().format(this.getDeathdate()));
+			sb.append("," + LATIN_CROSS)
+					.append(DTF.format(this.getDeathdate()));
 		return sb.append(")").toString();
 	}
 	
@@ -364,7 +364,8 @@ public class Person implements Serializable {
 	
 	public void diedIn(Date deathDate) {
 		if (deathDate != null)
-			diedIn(deathDate.toInstant().atZone(ZONE_ID).toLocalDate());
+			diedIn(deathDate.toInstant().atZone(ZoneId.systemDefault())
+					.toLocalDate());
 	}
 	
 	public void diedIn(Date deathDate, ZoneId zone) {

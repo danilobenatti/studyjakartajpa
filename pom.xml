@@ -1,21 +1,21 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.1.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	xsi:schemaLocation="http://maven.apache.org/POM/4.1.0 https://maven.apache.org/xsd/maven-4.1.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>br.com.studyjakartajpa</groupId>
 	<artifactId>studyjakartajpa</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<description>Project Study Jakarta JPA and EclipseLink</description>
+	<description>Project Study Jakarta JPA with EclipseLink</description>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.project.sourceRoots.warningsDisabled>true</maven.project.sourceRoots.warningsDisabled>
-		<java.version>25</java.version>
+		<maven.project.sourceRoots.warningsDisabled>false</maven.project.sourceRoots.warningsDisabled>
+		<java.version>21</java.version>
 		<jakarta.version>3.2.0</jakarta.version>
-		<eclipselink.version>5.0.0</eclipselink.version>
-		<postgresql.version>42.7.10</postgresql.version>
-		<lombok.version>1.18.44</lombok.version>
+		<eclipselink.version>5.0.1</eclipselink.version>
+		<postgresql.version>42.7.13</postgresql.version>
+		<lombok.version>1.18.46</lombok.version>
 		<apache.commons-lang3.version>3.20.0</apache.commons-lang3.version>
-		<log4j-api.version>2.25.3</log4j-api.version>
+		<log4j-api.version>2.26.1</log4j-api.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -31,16 +31,10 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.eclipse.persistence</groupId>
-			<artifactId>org.eclipse.persistence.jpa.modelgen.processor</artifactId>
-			<version>${eclipselink.version}</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<version>${postgresql.version}</version>
-			<scope>compile</scope>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -65,10 +59,9 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.14.1</version>
+				<version>3.15.0</version>
 				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
+					<release>${java.version}</release>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.eclipse.persistence</groupId>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-mappings version="3.2" xmlns="https://jakarta.ee/xml/ns/persistence/orm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence/orm https://jakarta.ee/xml/ns/persistence/orm/orm_3_2.xsd">
+	<named-query name="Persons.withPartners">
+		<query>select p from Person p where p.partner is not null</query>
+	</named-query>
+	<named-query name="Persons.greaterOrEqualtoAge">
+		<query>select p
+			from Person p 
+			where p.deathdate is null 
+			and (extract(year from current_date) - extract(year from p.birthdate)) >= :age
+		</query>
+	</named-query>
+	<named-query name="Persons.withPhoners">
+		<query>select distinct p from Person p inner join p.phones pp</query>
+	</named-query>
+	<named-query name="Persons.withEmails">
+		<query>select distinct p from Person p inner join p.emails pe</query>
+	</named-query>
+	<entity class="studyjakartajpa.model.Person">
+		<attributes>
+			<basic name="firstName">
+				<column name="first_name" nullable="false" length="150" />
+			</basic>
+			<basic name="dateCreate">
+				<column name="date_insert" updatable="false" column-definition="TIMESTAMP WITH TIME ZONE" />
+			</basic>
+			<basic name="dateUpdate">
+				<column name="date_update" insertable="false" column-definition="TIMESTAMP WITH TIME ZONE" />
+			</basic>
+		</attributes>
+	</entity>
+</entity-mappings>

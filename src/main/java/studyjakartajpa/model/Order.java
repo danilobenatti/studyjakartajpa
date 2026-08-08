@@ -72,14 +72,12 @@ public class Order implements Serializable {
 	
 	static Locale locale = Locale.getDefault();
 	
-	static final ThreadLocal<DateTimeFormatter> DTF = ThreadLocal.withInitial(
-			() -> DateTimeFormatter.ofPattern("d/MMM/yyyy", locale));
+	static final DateTimeFormatter DTF = DateTimeFormatter
+			.ofPattern("d/MMM/yyyy", locale);
 	
-	static final ThreadLocal<NumberFormat> CF = ThreadLocal
-			.withInitial(() -> NumberFormat.getCurrencyInstance(locale));
+	static final NumberFormat CF = NumberFormat.getCurrencyInstance(locale);
 	
-	static final ThreadLocal<NumberFormat> PF = ThreadLocal
-			.withInitial(() -> NumberFormat.getPercentInstance(locale));
+	static final NumberFormat PF = NumberFormat.getPercentInstance(locale);
 	
 	@Id
 	@EqualsAndHashCode.Include
@@ -213,18 +211,14 @@ public class Order implements Serializable {
 	
 	@Override
 	public String toString() {
-		String string = new ToStringBuilder(this,
+		return new ToStringBuilder(this,
 				ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("person", this.getPerson().getFirstname())
-				.append("billingDate", DTF.get().format(this.getBillingDate()))
-				.append("discount", PF.get().format(this.getDiscount()))
-				.append("total", CF.get().format(this.getTotal()))
+				.append("person", this.getPerson().getFirstName())
+				.append("billingDate", DTF.format(this.getBillingDate()))
+				.append("discount", PF.format(this.getDiscount()))
+				.append("total", CF.format(this.getTotal()))
 				.append("status", this.getStatus().getValue())
 				.append("products", this.listProducts()).toString();
-		DTF.remove();
-		PF.remove();
-		CF.remove();
-		return string;
 	}
 	
 }

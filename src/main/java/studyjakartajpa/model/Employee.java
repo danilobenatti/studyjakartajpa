@@ -52,15 +52,23 @@ public class Employee extends Person {
 	private BigDecimal salary = BigDecimal.ZERO;
 	
 	public void setSalary(BigDecimal salary) {
+		if (salary == null) {
+			this.salary = BigDecimal.ZERO;
+			return;
+		}
 		this.salary = salary.setScale(2, RoundingMode.HALF_EVEN);
 	}
 	
-	public void setSalary(String value) {
-		this.salary = new BigDecimal(value).setScale(2, RoundingMode.HALF_EVEN);
+	public void setSalaryFromString(String value) {
+		if (value == null || value.isBlank()) {
+			setSalary(BigDecimal.ZERO);
+		} else {
+			setSalary(new BigDecimal(value));
+		}
 	}
 	
-	public void setSalary(double value) {
-		setSalary(String.valueOf(value));
+	public void setSalaryFromDouble(double value) {
+		setSalary(BigDecimal.valueOf(value));
 	}
 	
 	@Column(name = "hiringDate", nullable = false)
@@ -72,7 +80,7 @@ public class Employee extends Person {
 		super(firstname, gender, birthdate);
 		this.register = register;
 		this.jobFunction = jobFunction.getCode();
-		this.salary = new BigDecimal(Double.toString(salary));
+		this.setSalaryFromDouble(salary);
 		this.hiringDate = hiringDate;
 	}
 	
@@ -83,7 +91,7 @@ public class Employee extends Person {
 		sb.append("register", this.getRegister());
 		sb.append("jobFunction", this.getJobFunction().getDescription());
 		sb.append("salary", this.getSalaryFormatted());
-		sb.append("hiringDate", DTF.get().format(this.getHiringDate()));
+		sb.append("hiringDate", DTF.format(this.getHiringDate()));
 		return sb.toString();
 	}
 	

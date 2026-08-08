@@ -35,7 +35,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import studyjakartajpa.model.enums.ProductUnit;
@@ -58,11 +57,9 @@ public class Product implements Serializable {
 	
 	static ZoneId systemDefault = ZoneId.systemDefault();
 	
-	private static final ThreadLocal<NumberFormat> CF = ThreadLocal
-			.withInitial(() -> NumberFormat.getCurrencyInstance(locale));
+	static final NumberFormat CF = NumberFormat.getCurrencyInstance(locale);
 	
-	private static final ThreadLocal<NumberFormat> PF = ThreadLocal
-			.withInitial(() -> NumberFormat.getPercentInstance(locale));
+	static final NumberFormat PF = NumberFormat.getPercentInstance(locale);
 	
 	@Id
 	@SequenceGenerator(catalog = "jpaforbeginners", schema = "public",
@@ -72,15 +69,15 @@ public class Product implements Serializable {
 		generator = "products_seq_generator")
 	private long id;
 	
-	@NonNull
+	@lombok.NonNull
 	@Column(name = "title", length = 150, nullable = false)
 	private String title;
 	
-	@NonNull
+	@lombok.NonNull
 	@Column(name = "description", length = 255, nullable = false)
 	private String description;
 	
-	@NonNull
+	@lombok.NonNull
 	@NotNull
 	@Column(name = "unitPrice", precision = 18, scale = 2, nullable = false)
 	private BigDecimal unitPrice = BigDecimal.ZERO;
@@ -177,11 +174,9 @@ public class Product implements Serializable {
 	}
 	
 	public String getPriceInfo() {
-		String price = CF.get().format(this.getPriceWithDiscount());
+		String price = CF.format(this.getPriceWithDiscount());
 		if (this.getDiscount().compareTo(BigDecimal.ZERO) > 0)
-			return "%s(-%s)".formatted(price, PF.get().format(this.getDiscount()));
-		CF.remove();
-		PF.remove();
+			return "%s(-%s)".formatted(price, PF.format(this.getDiscount()));
 		return price;
 	}
 	
