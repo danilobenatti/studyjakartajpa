@@ -5,10 +5,15 @@ import java.time.ZoneId;
 
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
+import studyjakartajpa.util.DateUtils;
 
 public final class AuditListener {
 	
-	protected static LocalDateTime now() { return LocalDateTime.now(ZoneId.systemDefault()); }
+	private static final ZoneId ZONE_ID = ZoneId.systemDefault();
+	
+	protected static LocalDateTime now() {
+		return DateUtils.now(ZONE_ID);
+	}
 	
 	@PrePersist
 	public void setCreatedOn(Object obj) {
@@ -39,8 +44,9 @@ public final class AuditListener {
 			case Product p -> p.setDateUpdate(now());
 			case WishList w -> w.setDateUpdate(now());
 			case Order o -> {
-				if (o.isWaiting())
+				if (o.isWaiting()) {
 					o.calcPricesOrder();
+				}
 				o.setDateUpdate(now());
 			}
 			case OrderItem oi when oi.getOrder() != null && oi.getOrder().isWaiting() -> oi.setSubTotal();

@@ -44,8 +44,8 @@ public class OrderSale {
 	}
 	
 	public OrderSale(Tuple tuple) {
-		this.year = tuple.get("year", Integer.class);
-		this.month = tuple.get("month", Integer.class);
+		this.year = tuple.get("year", Number.class).intValue();
+		this.month = tuple.get("month", Number.class).intValue();
 		this.average = tuple.get("average", BigDecimal.class);
 		this.count = tuple.get("counter", Long.class);
 		this.status = tuple.get("status", Byte.class);

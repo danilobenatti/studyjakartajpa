@@ -12,7 +12,8 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import jakarta.persistence.Column;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -20,20 +21,20 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import studyjakartajpa.model.enums.JobFunctions;
+import studyjakartajpa.util.DateUtils;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED, force = true)
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@SuperBuilder(toBuilder = true, builderMethodName = "maker",
-	buildMethodName = "done")
+@SuperBuilder(toBuilder = true)
 @DiscriminatorValue(value = "E")
+@Table(name = "employees", catalog = "jpaforbeginners", schema = "public")
 public class Employee extends Person {
 	private static final long serialVersionUID = 1L;
 	
-	@Column(name = "register", length = 255, nullable = false)
+	@Column(name = "register", length = 255, nullable = false, unique = true)
 	private String register;
 	
 	@Column(name = "jobfunction", nullable = false)
@@ -74,10 +75,11 @@ public class Employee extends Person {
 	@Column(name = "hiringDate", nullable = false)
 	private LocalDate hiringDate;
 	
-	public Employee(String firstname, Character gender, LocalDate birthdate,
-			String register, JobFunctions jobFunction, double salary,
-			LocalDate hiringDate) {
-		super(firstname, gender, birthdate);
+	public Employee(String firstname, Character gender, LocalDate birthdate, String register, JobFunctions jobFunction,
+			double salary, LocalDate hiringDate) {
+		this.setFirstName(firstname);
+		this.setGender(gender);
+		this.setBirthDate(birthdate);
 		this.register = register;
 		this.jobFunction = jobFunction.getCode();
 		this.setSalaryFromDouble(salary);
@@ -96,7 +98,7 @@ public class Employee extends Person {
 	}
 	
 	public String getSalaryFormatted() {
-		return this.getSalaryFormatted(locale);
+		return this.getSalaryFormatted(DateUtils.getLocale());
 	}
 	
 	public String getSalaryFormatted(Locale locale) {
@@ -104,5 +106,4 @@ public class Employee extends Person {
 		cf.setMaximumFractionDigits(2);
 		return cf.format(this.getSalary());
 	}
-	
 }

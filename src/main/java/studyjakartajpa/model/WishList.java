@@ -15,6 +15,7 @@ import java.util.Set;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -38,12 +39,14 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @EntityListeners(value = { AuditListener.class })
 @Table(name = "wishlists", catalog = "jpaforbeginners", schema = "public")
+@SequenceGenerator(catalog = "jpaforbeginners", schema = "public", name = "wishlists_seq_generator",
+	sequenceName = "wishlists_id_seq", initialValue = 100, allocationSize = 50)
 public class WishList implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
@@ -53,11 +56,7 @@ public class WishList implements Serializable {
 	
 	@Id
 	@EqualsAndHashCode.Include
-	@SequenceGenerator(catalog = "jpaforbeginners", schema = "public",
-		name = "wishlists_seq_generator", sequenceName = "wishlists_id_seq",
-		initialValue = 100, allocationSize = 50)
-	@GeneratedValue(strategy = GenerationType.SEQUENCE,
-		generator = "wishlists_seq_generator")
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "wishlists_seq_generator")
 	private Long id;
 	
 	@Column(name = "title")
@@ -67,26 +66,21 @@ public class WishList implements Serializable {
 	private String description;
 	
 	@Setter(value = AccessLevel.PROTECTED)
-	@Column(name = "dateinsert", updatable = false,
-		columnDefinition = "TIMESTAMP WITH TIME ZONE")
+	@Column(name = "dateinsert", updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateCreate;
 	
 	@Setter(value = AccessLevel.PROTECTED)
-	@Column(name = "dateupdate", insertable = false,
-		columnDefinition = "TIMESTAMP WITH TIME ZONE")
+	@Column(name = "dateupdate", insertable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateUpdate;
 	
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "person_id", nullable = false)
 	private Person person;
 	
-	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinTable(name = "wishlists_products", catalog = "jpaforbeginners",
-		schema = "public",
-		joinColumns = @JoinColumn(name = "wishlist_id",
-			referencedColumnName = "id"),
-		inverseJoinColumns = @JoinColumn(name = "product_id",
-			referencedColumnName = "id"))
+	@ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@JoinTable(name = "wishlists_products", catalog = "jpaforbeginners", schema = "public",
+		joinColumns = @JoinColumn(name = "wishlists_id", referencedColumnName = "id"),
+		inverseJoinColumns = @JoinColumn(name = "products_id", referencedColumnName = "id"))
 	private Set<Product> products = new HashSet<>();
 	
 	public void setProduct(Product product) {
@@ -115,8 +109,7 @@ public class WishList implements Serializable {
 		Objects.requireNonNull(description, "Description can't be null.");
 		description = description.trim();
 		if (description == null || description.isBlank())
-			throw new IllegalArgumentException(
-					"Description can't be null or blank.");
+			throw new IllegalArgumentException("Description can't be null or blank.");
 		
 		Objects.requireNonNull(person, "Person can't be null.");
 		if (person.getClass() == null)
@@ -130,8 +123,7 @@ public class WishList implements Serializable {
 	}
 	
 	@Builder(builderMethodName = "maker", buildMethodName = "done")
-	public static WishList of(String title, String description, Person person,
-			Collection<Product> products) {
+	public static WishList of(String title, String description, Person person, Collection<Product> products) {
 		WishList wishList = new WishList();
 		wishList.setTitle(title);
 		wishList.setDescription(description);
@@ -141,8 +133,7 @@ public class WishList implements Serializable {
 	}
 	
 	@Builder(setterPrefix = "with")
-	public static WishList of(String title, String description, Person person,
-			Product... products) {
+	public static WishList of(String title, String description, Person person, Product... products) {
 		WishList wishList = new WishList();
 		wishList.setTitle(title);
 		wishList.setDescription(description);
@@ -153,19 +144,16 @@ public class WishList implements Serializable {
 	
 	@Override
 	public String toString() {
-		List<String> listProducts = getProducts().stream()
-				.map(Product::getProductInfo).sorted().toList();
+		List<String> listProducts = getProducts().stream().map(Product::getProductInfo).sorted().toList();
 		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("person", this.getPerson().getFirstName())
-				.append("title", this.getTitle())
-				.append("description", this.getDescription())
-				.append("total", CF.format(this.getPriceTotal()))
+				.append("person", this.getPerson().getFirstName()).append("title", this.getTitle())
+				.append("description", this.getDescription()).append("total", CF.format(this.getPriceTotal()))
 				.append("products", listProducts).build();
 	}
 	
 	public BigDecimal getPriceTotal() {
-		Optional<BigDecimal> total = this.getProducts().stream()
-				.map(Product::getPriceWithDiscount).reduce(BigDecimal::add);
+		Optional<BigDecimal> total = this.getProducts().stream().map(Product::getPriceWithDiscount)
+				.reduce(BigDecimal::add);
 		if (total.isPresent())
 			return total.get();
 		return BigDecimal.ZERO;

@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<entity-mappings version="3.2" xmlns="https://jakarta.ee/xml/ns/persistence/orm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence/orm https://jakarta.ee/xml/ns/persistence/orm/orm_3_2.xsd">
+<entity-mappings xmlns="https://jakarta.ee/xml/ns/persistence/orm"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+		https://jakarta.ee/xml/ns/persistence/orm 
+		https://jakarta.ee/xml/ns/persistence/orm/orm_3_2.xsd"
+	version="3.2">
 	<named-query name="Persons.withPartners">
 		<query>select p from Person p where p.partner is not null</query>
-	</named-query>
-	<named-query name="Persons.greaterOrEqualtoAge">
-		<query>select p
-			from Person p 
-			where p.deathdate is null 
-			and (extract(year from current_date) - extract(year from p.birthdate)) >= :age
-		</query>
 	</named-query>
 	<named-query name="Persons.withPhoners">
 		<query>select distinct p from Person p inner join p.phones pp</query>
@@ -17,10 +14,37 @@
 	<named-query name="Persons.withEmails">
 		<query>select distinct p from Person p inner join p.emails pe</query>
 	</named-query>
+	<named-native-query name="Persons.greaterOrEqualtoAge" result-class="studyjakartajpa.model.Person" >
+		<query>select p.id, p.peType, p.first_name, p.gender, p.weight, p.height, p.birth_date, p.death_date, p.date_insert, p.date_update, p.partner_id 
+			from persons p 
+			where p.death_date is null 
+			and (extract(year from current_date) - extract(year from p.birth_date)) >= ?1
+		</query>
+	</named-native-query>
 	<entity class="studyjakartajpa.model.Person">
+		<inheritance strategy="JOINED" />
 		<attributes>
+			<id name="id">
+				<column name="id" />
+				<generated-value strategy="SEQUENCE" generator="persons_seq_generator" />
+			</id>
 			<basic name="firstName">
 				<column name="first_name" nullable="false" length="150" />
+			</basic>
+			<basic name="gender">
+				<column name="gender" nullable="false" />
+			</basic>
+			<basic name="weight">
+				<column name="weight" column-definition="NUMERIC(3,1) default 0.0" />
+			</basic>
+			<basic name="height">
+				<column name="height" column-definition="NUMERIC(3,1) default 0.0" />
+			</basic>
+			<basic name="birthDate">
+				<column name="birth_date" nullable="false" />
+			</basic>
+			<basic name="deathDate">
+				<column name="death_date" />
 			</basic>
 			<basic name="dateCreate">
 				<column name="date_insert" updatable="false" column-definition="TIMESTAMP WITH TIME ZONE" />

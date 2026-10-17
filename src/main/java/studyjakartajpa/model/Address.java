@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -23,22 +24,21 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @Table(name = "addresses", catalog = "jpaforbeginners", schema = "public")
+@SequenceGenerator(catalog = "jpaforbeginners", schema = "public", name = "addresses_seq_generator",
+	sequenceName = "addresses_id_seq", initialValue = 100, allocationSize = 50)
 public class Address implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	@Id
+	@Setter(value = AccessLevel.PROTECTED)
 	@EqualsAndHashCode.Include
-	@SequenceGenerator(catalog = "jpaforbeginners", schema = "public",
-		name = "addresses_seq_generator", sequenceName = "addresses_id_seq",
-		initialValue = 100, allocationSize = 50)
-	@GeneratedValue(strategy = GenerationType.SEQUENCE,
-		generator = "addresses_seq_generator")
-	private long id;
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "addresses_seq_generator")
+	private Long id;
 	
 	@Column(name = "number")
 	private String number;
@@ -65,14 +65,12 @@ public class Address implements Serializable {
 	private boolean isPrincipal;
 	
 	@ManyToOne
-	@JoinColumn(name = "person_id", referencedColumnName = "id",
-		nullable = false)
+	@JoinColumn(name = "person_id", referencedColumnName = "id", nullable = false)
 	private Person person;
 	
 	@Builder(builderMethodName = "maker", buildMethodName = "done")
-	public static Address of(String number, String street, String unit,
-			String city, String state, String country, String zipCode,
-			boolean isPrincipal, Person person) {
+	public static Address of(String number, String street, String unit, String city, String state, String country,
+			String zipCode, boolean isPrincipal, Person person) {
 		Address address = new Address();
 		address.setNumber(number);
 		address.setStreet(street);

@@ -5,12 +5,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.Tuple;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -20,11 +25,27 @@ import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.SetJoin;
+import studyjakartajpa.dao.WishlistDAO;
 import studyjakartajpa.model.balance.WishListBalance;
-import studyjakartajpa.util.EntityManagerTest;
+import studyjakartajpa.util.JpaUtils;
 
 @TestMethodOrder(OrderAnnotation.class)
-class WishListCRUDTest extends EntityManagerTest {
+class WishListCRUDTest {
+	
+	public static Logger log = LogManager.getLogger();
+	private WishlistDAO wishlistDAO;
+	private EntityManager em;
+	
+	@BeforeEach
+	void setUp() {
+		em = JpaUtils.getEntityManager();
+		wishlistDAO = new WishlistDAO();
+	}
+	
+	@AfterAll
+	static void tearDownClass() {
+		JpaUtils.closeEntityManager();
+	}
 	
 	@Test
 	@Order(1)
@@ -40,9 +61,7 @@ class WishListCRUDTest extends EntityManagerTest {
 				"Monthly purchase for the office", person);
 		officeList.setProducts(product1, product2, product3, product4);
 		
-		em.getTransaction().begin();
-		em.persist(officeList);
-		em.getTransaction().commit();
+		wishlistDAO.save(officeList);
 		
 		CriteriaBuilder cb = em.getCriteriaBuilder();
 		CriteriaQuery<WishList> cq = cb.createQuery(WishList.class);

@@ -1,59 +1,89 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<persistence version="3.2" xmlns="https://jakarta.ee/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd">
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+		https://jakarta.ee/xml/ns/persistence 
+		https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd"
+	version="3.2">
 	<!-- Define persistence unit -->
-	<persistence-unit name="persistence-unit" transaction-type="RESOURCE_LOCAL">
+	<persistence-unit name="jpaStudyPU" transaction-type="RESOURCE_LOCAL">
 		<description>JPA Study Beginners</description>
 		<provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
 		<!-- <non-jta-data-source></non-jta-data-source> -->
 		<!-- By default your mappings can be defined in orm.xml file, -->
 		<!-- which is discovered automatically. -->
+		
 		<mapping-file>META-INF/person.xml</mapping-file>
 		<mapping-file>META-INF/order.xml</mapping-file>
-		<!-- Enables auto discovery of persistent classes, -->
-		<!-- otherwise they must be listed using <class> -->
+		
 		<class>studyjakartajpa.model.Person</class>
+		<class>studyjakartajpa.model.Employee</class>
 		<class>studyjakartajpa.model.Product</class>
 		<class>studyjakartajpa.model.Address</class>
 		<class>studyjakartajpa.model.WishList</class>
 		<class>studyjakartajpa.model.Order</class>
 		<class>studyjakartajpa.model.OrderItem</class>
-		<class>studyjakartajpa.model.Employee</class>
+		<class>studyjakartajpa.model.OrderItemPk</class>
+
 		<exclude-unlisted-classes>true</exclude-unlisted-classes>
 
 		<properties>
-			<!-- database connection -->
+			<!-- 1.DRIVER AND DATABASE CONNECTION -->
 			<property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver" />
-			<property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/jpaforbeginners?reWriteBatchedInserts=true" />
+			<property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/jpaforbeginners" />
 			<property name="jakarta.persistence.jdbc.user" value="postgres" />
 			<property name="jakarta.persistence.jdbc.password" value="123456" />
+
+			<!-- 2. NATIVE CONNECTION POOL MANAGEMENT (ECLIPSELINK) -->
+			<!-- IMPORTANT: We have enabled the shared pool internally and externally to ensure connection limits function correctly -->
+			<property name="eclipselink.connection-pool.shared" value="true" />
+			<property name="eclipselink.connection-pool.default.shared" value="true" />
+			<property name="eclipselink.connection-pool.default.initial" value="5" />
+			<property name="eclipselink.connection-pool.default.min" value="5" />
+			<property name="eclipselink.connection-pool.default.max" value="15" />
+			<property name="eclipselink.connection-pool.default.wait" value="5000" />
+			<!-- Binds the connection exclusively to the transaction cycle in the RESOURCE_LOCAL environment -->
+			<property name="eclipselink.jdbc.exclusive-connection.mode" value="Transactional" />
+
+			<!-- 3. BATCH WRITING SETTINGS (BATCH INGESTION) -->
+			<!-- Define o uso de JDBC em lote nativo e o tamanho ideal para agrupamento de comandos -->
+			<property name="eclipselink.jdbc.batch-writing" value="JDBC" />
+			<property name="eclipselink.jdbc.batch-writing.size" value="50" />
+			<!-- Keeps accumulated changes in memory, dispatching the batch of unified commands only upon commit -->
+			<property name="eclipselink.persistence-context.flush-mode" value="commit" />
+			<!-- PostgreSQL specific driver optimization to rewrite queries into batches -->
+			<property name="eclipselink.jdbc.property.reWriteBatchedInserts" value="true" />
+
+			<!-- 4. DATABASE DIALECT AND BEHAVIOR -->
+			<property name="eclipselink.target-database" value="org.eclipse.persistence.platform.database.PostgreSQLPlatform" />
+			<property name="eclipselink.jdbc.native-sql" value="true" />
+			<property name="eclipselink.jdbc.bind-parameters" value="true" />
+			<property name="eclipselink.jdbc.fetch-size" value="50" />
+			<!-- Kept as 'false' to match the Postgres 'snake_case' standard -->
+			<property name="eclipselink.jdbc.uppercase-columns" value="false" />
+
+			<!-- 5. DATA CONSISTENCY AND SECOND-LEVEL CACHE -->
+			<!-- Disables the global shared L2 cache to prevent stale data across distinct threads during console tests -->
+			<!-- This prevents Thread A from reading stale cached data while Thread B has just updated the physical database -->
+			<property name="eclipselink.cache.shared.default" value="false" />
+			<property name="eclipselink.cache.type.default" value="Weak" />
+
+			<!-- 6. AUTOMATIC SCHEMA GENERATION (DDL) -->
 			<property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create" />
 			<property name="jakarta.persistence.sql-load-script-source" value="META-INF/initial-data.sql" />
 			<property name="jakarta.persistence.schema-generation.scripts.action" value="drop-and-create" />
 			<property name="jakarta.persistence.schema-generation.scripts.create-target" value="create-schema.sql" />
 			<property name="jakarta.persistence.schema-generation.scripts.drop-target" value="drop-schema.sql" />
-
-			<property name="eclipselink.target-database" value="org.eclipse.persistence.platform.database.PostgreSQLPlatform" />
-			<property name="eclipselink.jdbc.native-sql" value="true" />
 			<property name="eclipselink.ddl-generation.output-mode" value="both" />
 			<property name="eclipselink.application-location" value="./src/main/resources/ddl" />
-			<property name="eclipselink.foreign-key-on-delete-set-null" value="true" />
 
-			<property name="eclipselink.jdbc.bind-parameters" value="true" />
-			<property name="eclipselink.jdbc.fetch-size" value="50" />
-			<property name="eclipselink.jdbc.uppercase-columns" value="true" />
-
-			<!-- configuring batch writing -->
-			<property name="eclipselink.jdbc.batch-writing" value="jdbc" />
-			<property name="eclipselink.jdbc.batch-writing.size" value="50" />
-
-			<!-- configure logging -->
+			<!-- 7. SQL EXECUTION LOGS AND AUDITING -->
 			<property name="eclipselink.logging.level" value="FINE" />
 			<property name="eclipselink.logging.level.sql" value="FINEST" />
 			<property name="eclipselink.logging.parameters" value="true" />
 			<property name="eclipselink.logging.timestamp" value="true" />
 			<property name="eclipselink.logging.session" value="true" />
-			<property name="eclipselink.logging.thread" value="false" />
+			<property name="eclipselink.logging.thread" value="true" />
 			<property name="eclipselink.logging.exceptions" value="true" />
 			<property name="eclipselink.logging.logger" value="DefaultLogger" />
 		</properties>

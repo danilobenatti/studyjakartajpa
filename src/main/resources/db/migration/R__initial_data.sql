@@ -1,0 +1,79 @@
+INSERT INTO jpaforbeginners.public.persons(id,petype,date_insert,birth_date,first_name,gender,weight,height,partner_id) 
+VALUES 
+	(10,'E',current_timestamp,(current_date - interval '25 years')::date,'John','M',NULL,NULL,NULL),
+	(11,'E',current_timestamp,(current_date - interval '23 years')::date,'Mary','F',62.8,1.52,NULL),
+	(12,'E',current_timestamp,(current_date - interval '30 years')::date,'Michael','M',89.8,1.78,NULL),
+	(13,'P',current_timestamp,(current_date - interval '27 years')::date,'Jennifer','F',55.5,1.65,14),
+	(14,'P',current_timestamp,(current_date - interval '40 years')::date,'David','M',78.7,1.83,13),
+	(15,'P',current_timestamp,(current_date - interval '23 years')::date,'Elizabeth','F',70.8,1.78,NULL),
+	(16,'P',current_timestamp,(current_date - interval '24 years')::date,'Robert','M',90.3,1.92,NULL);
+
+INSERT INTO jpaforbeginners.public.employees(id,hiringdate,jobfunction,register,salary) 
+VALUES 
+	(10,(current_date - interval '3 years')::date,1,'123456',1500.995),
+	(11,(current_date - interval '3 years 6 months')::date,2,'987654',2899.995),
+	(12,(current_date - interval '3 years 6 months 45 days')::date,3,'977655',5899.995);
+
+INSERT INTO jpaforbeginners.public.persons_phones(person_id,phone_number,phtype) 
+VALUES 
+	(10,'(11)98888-8888','M'),(11,'(11)91212-1212','W'),
+	(12,'(11)4545-4545','H'),(12,'(11)5656-6565','W'),
+	(13,'(11)93333-2222','M'),(14,'(11)96666-6666','M'),
+	(14,'(11)2323-2323','H'),(15,'(11)99191-1919','M'),
+	(16,'(11)95454-0707','M');
+
+INSERT INTO jpaforbeginners.public.persons_emails(person_id,email) 
+VALUES 
+	(10,'test10@mail.com'),(11,'test11@mail.com'),
+	(11,'test11@pmail.com'),(12,'test12@mail.com'),
+	(13,'test13@mail.com'),(14,'test14@mail.com'),
+	(14,'test14@pmail.com'),(15,'test5@mail.com'),
+	(16,'test16@mail.com'),(16,'test16@pmail.com');
+
+INSERT INTO jpaforbeginners.public.addresses(id,city,country,isprincipal,number,state,street,unit,zipcode,person_id) 
+VALUES 
+	(10,'New York','USA',false,'350','NY','5th Avenue',NULL,'10118',10),
+	(11,'Boston','USA',true,'789','MA','Elm St.',NULL,'02110',11),
+	(12,'New York','USA',true,'123','NY','Main St.','Apt.4B','10001',13),
+	(13,'São Paulo','Brazil',true,'233','SP','Paulista Avenue','7th','01310-100',14);
+
+INSERT INTO jpaforbeginners.public.products(id,dateinsert,description,discount,title,unit,unitprice,validity,active) 
+VALUES 
+	(10,current_timestamp,'Description Product 1',0.1,'Title Product 1',1,5.5,(current_date + interval '1 year')::date,false),
+	(11,current_timestamp,'Description Product 2',0.2,'Title Product 2',1,10.5,(current_date + interval '6 months')::date,true),
+	(12,current_timestamp,'Description Product 3',0.3,'Title Product 3',1,15.5,(current_date + interval '1 year 6 months')::date,true),
+	(13,current_timestamp,'Description Product 4',0.0,'Title Product 4',3,41.0,(current_date + interval '2 years')::date,false);
+
+INSERT INTO jpaforbeginners.public.wishlists(id,dateinsert,description,title,person_id) 
+VALUES 
+	(10,current_timestamp,'School supplies for my daughter','School supplies',12),
+	(11,current_timestamp,'Personal care products','Health and hygiene',13),
+	(12,current_timestamp,'List of materials for kitchen renovation','Kitchen Renovation',12);
+
+INSERT INTO jpaforbeginners.public.wishlists_products(product_id,wishlist_id) 
+VALUES 
+	(10,10),(11,10),(12,10),(12,11),(10,12),(11,12),(13,12);
+
+INSERT INTO jpaforbeginners.public.orders(id,billingdate,dateinsert,discount,status,total,person_id) 
+VALUES 
+	(10,(current_date + interval '40 days')::date,current_timestamp,0.05,1,42.46,10),
+	(11,(current_date + interval '60 days')::date,current_timestamp,0.05,1,57.47,10),
+	(12,(current_date + interval '30 days')::date,current_timestamp,0.1,1,9.76,10);
+
+INSERT INTO jpaforbeginners.public.orderitems(quantity,subtotal,order_id,product_id) 
+VALUES 
+	(1,4.95,10,10),(1,8.4,10,11),(1,10.85,10,12),
+	(0.5,20.5,10,13),(2,9.9,11,10),(1,8.4,11,11),
+	(2,21.7,11,12),(0.5,20.5,11,13),(1,10.85,12,12);
+
+INSERT INTO jpaforbeginners.public.orders(id,billingdate,dateinsert,discount,status,total,person_id) 
+VALUES 
+	(13,(current_date - interval '30 days')::date,current_timestamp,0.05,3,42.46,10),
+	(14,(current_date - interval '60 days')::date,current_timestamp,0.05,3,57.47,10),
+	(15,(current_date - interval '40 days')::date,current_timestamp,0.1,3,9.76,10);
+
+INSERT INTO jpaforbeginners.public.orderitems(quantity,subtotal,order_id,product_id) 
+VALUES 
+	(1,4.95,13,10),(1,8.4,13,11),(1,10.85,13,12),
+	(0.5,20.5,13,13),(2,9.9,14,10),(1,8.4,14,11),
+	(2,21.7,14,12),(0.5,20.5,14,13),(1,10.85,15,12);

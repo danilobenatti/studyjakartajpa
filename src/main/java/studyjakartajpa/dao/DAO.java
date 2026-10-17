@@ -1,153 +1,45 @@
 package studyjakartajpa.dao;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
+import jakarta.persistence.metamodel.SingularAttribute;
+import studyjakartajpa.base.SortOrder;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.PersistenceContextType;
-import jakarta.persistence.PersistenceUnit;
-import jakarta.persistence.TypedQuery;
-
-public class DAO<E> {
+public interface DAO<E, I> {
 	
-	@PersistenceUnit(unitName = "persistence-unit")
-	private static EntityManagerFactory emf;
+	E save(E entity);
 	
-	@PersistenceContext(type = PersistenceContextType.TRANSACTION)
-	private EntityManager em;
+	List<E> saveAll(Collection<E> entities);
 	
-	private Class<E> entity;
-	
-	static {
-		try {
-			emf = Persistence.createEntityManagerFactory("persistence-unit");
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	@SuppressWarnings("unchecked")
+	default List<E> saveAll(E... e) {
+		return saveAll(List.of(e));
 	}
 	
-	public DAO() {
-		this(null);
-	}
+	void deleteById(I id);
 	
-	public DAO(Class<E> entity) {
-		this.entity = entity;
-		em = emf.createEntityManager();
-	}
+	void delete(E entity);
 	
-	public DAO<E> begin() {
-		em.getTransaction().begin();
-		return this;
-	}
+	Optional<E> findById(I id);
 	
-	public DAO<E> commit() {
-		em.getTransaction().commit();
-		return this;
-	}
+	boolean existsById(I id);
 	
-	public DAO<E> add(E entity) {
-		em.persist(entity);
-		return this;
-	}
+	List<E> findAll(int maxResult, int startPosition);
 	
-	public DAO<E> addAll(List<E> entities) {
-		entities.forEach(em::persist);
-		return this;
-	}
+	Long count(Map<String, Object> filters);
 	
-	public DAO<E> update(E entity) {
-		em.merge(entity);
-		return this;
-	}
+	/**
+	 * Advanced, paginated, and sorted queries with full type safety.
+	 */
+	List<E> findByCriteria(Map<SingularAttribute<E, ?>, Object> filters, Set<SortOrder<E>> sorts, int maxResult,
+			int startPosition);
 	
-	public DAO<E> updateAll(List<E> entities) {
-		entities.forEach(em::merge);
-		return this;
-	}
-	
-	public DAO<E> delete(E entity) {
-		em.remove(entity);
-		return this;
-	}
-	
-	public DAO<E> deleteAll(List<E> entities) {
-		entities.forEach(em::remove);
-		return this;
-	}
-	
-	public DAO<E> addEntity(E entity) {
-		return this.begin().add(entity).commit();
-	}
-	
-	public DAO<E> addAllEntity(List<E> entities) {
-		return this.begin().addAll(entities).commit();
-	}
-	
-	public DAO<E> updateEntity(E entity) {
-		return this.begin().update(entity).commit();
-	}
-	
-	public DAO<E> updateAllEntity(List<E> entities) {
-		return this.begin().updateAll(entities).commit();
-	}
-	
-	public DAO<E> deleteEntity(E entity) {
-		return this.begin().delete(entity).commit();
-	}
-	
-	public DAO<E> deleteAllEntity(List<E> entities) {
-		return this.begin().deleteAll(entities).commit();
-	}
-	
-	public E searchById(Object id) {
-		if (this.entity == null)
-			throw new UnsupportedOperationException("Null class");
-		String qlString = StringUtils.joinWith(StringUtils.SPACE,
-				"select e from", this.entity.getName(), "e where e.id=", id);
-		return em.createQuery(qlString, this.entity).getSingleResult();
-	}
-	
-	public E findById(Object id) {
-		if (this.entity == null)
-			throw new UnsupportedOperationException("Null class");
-		return em.find(this.entity, id);
-	}
-	
-	public List<E> listAll(int maxResult, int startPosition) {
-		if (this.entity == null)
-			throw new UnsupportedOperationException("Null class");
-		String qlString = String.join(StringUtils.SPACE, "select e from",
-				this.entity.getName(), "e");
-		TypedQuery<E> query = em.createQuery(qlString, this.entity);
-		query.setMaxResults(maxResult);
-		query.setFirstResult(startPosition);
-		return query.getResultList();
-	}
-	
-	public List<E> listAll() {
-		return this.listAll(5, 0);
-	}
-	
-	public List<E> execute(String qlString, Object... objects) {
-		TypedQuery<E> query = em.createNamedQuery(qlString, this.entity);
-		int i = 1;
-		for (Object object : objects)
-			query.setParameter(i++, object);
-		return query.getResultList();
-	}
-	
-	public E getFirst(String qlString, Object... objects) {
-		List<E> list = execute(qlString, objects);
-		return list.isEmpty() ? null : list.get(0);
-	}
-	
-	public void end() {
-		if (em.isOpen())
-			em.close();
+	default List<E> findByCriteria(Map<SingularAttribute<E, ?>, Object> filters, Set<SortOrder<E>> sorts) {
+		return this.findByCriteria(filters, sorts, Integer.MAX_VALUE, 0);
 	}
 	
 }

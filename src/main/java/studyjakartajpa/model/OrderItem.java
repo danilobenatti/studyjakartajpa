@@ -20,13 +20,15 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PUBLIC)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @EntityListeners(value = { AuditListener.class })
 @Table(name = "orderitems", catalog = "jpaforbeginners", schema = "public")
@@ -38,17 +40,16 @@ public class OrderItem implements Serializable {
 	@EmbeddedId
 	private OrderItemPk id;
 	
-	@MapsId("orderId")
-	@ManyToOne(optional = false, fetch = FetchType.EAGER,
-		cascade = CascadeType.ALL)
-	@JoinColumn(name = "order_id", nullable = false,
-		referencedColumnName = "id")
+	@EqualsAndHashCode.Include
+	@MapsId(value = "orderId")
+	@ManyToOne(optional = false, fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	@JoinColumn(name = "order_id", nullable = false, referencedColumnName = "id")
 	private Order order;
 	
-	@MapsId("productId")
+	@EqualsAndHashCode.Include
+	@MapsId(value = "productId")
 	@ManyToOne(optional = false, fetch = FetchType.EAGER)
-	@JoinColumn(name = "product_id", nullable = false,
-		referencedColumnName = "id")
+	@JoinColumn(name = "product_id", nullable = false, referencedColumnName = "id")
 	private Product product;
 	
 	@Column(name = "quantity", nullable = false)
@@ -69,14 +70,16 @@ public class OrderItem implements Serializable {
 	
 	public BigDecimal calcSubTotal(Product product, BigDecimal quantity) {
 		BigDecimal price = product.getPriceWithDiscount();
-		if (price.signum() > 0 && quantity.signum() > 0)
+		if (price.signum() > 0 && quantity.signum() > 0) {
 			return price.multiply(quantity).setScale(2, RoundingMode.HALF_EVEN);
+		}
 		return BigDecimal.ZERO;
 	}
 	
 	@Builder(setterPrefix = "with")
 	public static OrderItem of(Order order, Product product, double quantity) {
 		OrderItem item = new OrderItem();
+		item.setId(new OrderItemPk());
 		item.setOrder(order);
 		item.setProduct(product);
 		item.setQuantity(quantity);
@@ -85,11 +88,9 @@ public class OrderItem implements Serializable {
 	
 	public String getOrderItemInfo() {
 		var sb = new StringBuilder(this.getProduct().getProductInfo());
-		
-		if (this.getQuantity() > 0 && this.getProduct().getUnit() != null)
-			sb.append(" ").append(NF.format(this.getQuantity()))
-					.append(this.getProduct().getUnit().getValue());
-		
+		if (this.getQuantity() > 0 && this.getProduct().getUnit() != null) {
+			sb.append(" ").append(NF.format(this.getQuantity())).append(this.getProduct().getUnit().getValue());
+		}
 		return sb.toString();
 	}
 	

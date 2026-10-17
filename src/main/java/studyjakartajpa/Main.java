@@ -2,38 +2,24 @@ package studyjakartajpa;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import jakarta.persistence.EntityManager;
-import studyjakartajpa.util.JpaUtil;
+
+import studyjakartajpa.dao.PersonDAO;
+import studyjakartajpa.model.Person;
+import studyjakartajpa.util.DateUtils;
 
 public class Main {
 	
-	static Logger log = LogManager.getLogger(Main.class);
+	private static final Logger log = LogManager.getLogger(Main.class);
+	
+	static PersonDAO personDAO = new PersonDAO();
 	
 	public static void main(String[] args) {
 		
-		EntityManager em = JpaUtil.getEntityManager();
+		Person p1 = new Person("Person Test 1", 'M', DateUtils.today());
 		
-		try {
-			em.getTransaction().begin();
-			/*
-			 * make this
-			 */
-			log.info("INFO");
-			log.warn("WARN");
-			log.error("ERROR");
-			
-			em.getTransaction().commit();
-		} catch (Exception e) {
-			log.error(e.getMessage());
-			if (em.isOpen()) {
-				em.getTransaction().rollback();
-			}
-		} finally {
-			if (em.isOpen()) {
-				em.close();
-				log.traceExit();
-			}
-		}
+		Person p1Saved = personDAO.save(p1);
+		
+		log.info(p1Saved);
 	}
 	
 }

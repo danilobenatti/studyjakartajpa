@@ -3,36 +3,51 @@ package studyjakartajpa.model;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.Map;
+import java.util.Optional;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import studyjakartajpa.dao.DAO;
+import studyjakartajpa.dao.EmployeeDAO;
 import studyjakartajpa.model.enums.JobFunctions;
-import studyjakartajpa.util.EntityManagerTest;
+import studyjakartajpa.util.JpaUtils;
 
 @TestMethodOrder(OrderAnnotation.class)
-class EmployeeCRUDTest extends EntityManagerTest {
+class EmployeeCRUDTest {
+	
+	public static Logger log = LogManager.getLogger();
+	private final EmployeeDAO employeeDAO = new EmployeeDAO();
+	
+	@BeforeEach
+	void setUp() {
+		JpaUtils.closeEntityManager();
+	}
+	
+	@AfterAll
+	static void tearDownClass() {
+		JpaUtils.closeEntityManager();
+	}
 	
 	@Test
 	@Order(1)
 	void includeEmployeeTest() {
-		Employee e = new Employee("Employee Include Test1", 'M',
-				LocalDate.of(1990, Month.JANUARY, 1), "987654",
+		Employee e = new Employee("Employee Include Test1", 'M', LocalDate.of(1990, Month.JANUARY, 1), "988677",
 				JobFunctions.ENG_JR, 1999.995, LocalDate.now().minusYears(3));
 		e.setWeight(89.5F);
 		e.setHeight(1.80F);
 		e.setEmails("employeeTest@wail.tw", "employeeTest2@wail.tw");
 		e.setPhones(Map.of('W', "(18)7979-8787", 'M', "(18)95656-1414"));
-		e.setAddress(Address.of("1486", "Buena Vista Dr", "Lake Buena Vista",
-				"Orlando", "FL", "USA", "32830", true, e));
+		e.setAddress(
+				Address.of("1486", "Buena Vista Dr", "Lake Buena Vista", "Orlando", "FL", "USA", "32830", true, e));
 		
-		DAO<Employee> dao = new DAO<>(Employee.class);
-		
-		dao.addEntity(e).end();
+		employeeDAO.save(e);
 		
 		log.info(e);
 		Assertions.assertEquals("Employee Include Test1", e.getFirstName());
@@ -41,14 +56,12 @@ class EmployeeCRUDTest extends EntityManagerTest {
 	@Test
 	@Order(2)
 	void updateEmployeeTest() {
-		DAO<Employee> dao = new DAO<>(Employee.class);
-		
-		Employee e = dao.findById(10L);
+		Employee e = employeeDAO.findById(10L).get();
 		
 		e.setWeight(89.8F);
 		e.setHeight(1.95F);
 		
-		dao.updateEntity(e).end();
+		employeeDAO.save(e);
 		
 		log.info(e);
 		Assertions.assertEquals("[23.6] at ideal weight", e.calcIMC());
@@ -57,25 +70,20 @@ class EmployeeCRUDTest extends EntityManagerTest {
 	@Test
 	@Order(3)
 	void deleteEmployeeTest() {
-		DAO<Employee> dao = new DAO<>(Employee.class);
+		Employee e = employeeDAO.findById(100L).orElse(null);
 		
-		Employee e = dao.findById(11L);
-		
-		dao.deleteEntity(e);
+		employeeDAO.delete(e);
 		
 		log.info(e);
-		Assertions.assertNull(dao.findById(1L));
-		dao.end();
+		Assertions.assertEquals(Optional.empty(), employeeDAO.findById(100L));
 	}
 	
 	@Test
 	@Order(4)
 	void findEmployeeByIdTest() {
-		DAO<Employee> dao = new DAO<>(Employee.class);
-		
-		Employee e = dao.findById(100L);
+		Employee e = employeeDAO.findById(12L).get();
 		
 		log.info(e);
-		Assertions.assertNull(e);
+		Assertions.assertNotNull(e);
 	}
 }

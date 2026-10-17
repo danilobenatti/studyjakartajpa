@@ -8,13 +8,16 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.eclipse.persistence.annotations.CascadeOnDelete;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -43,50 +46,39 @@ import studyjakartajpa.model.enums.OrderStatus;
 
 @Getter
 @Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 @EntityListeners(value = { AuditListener.class })
 @Table(name = "orders", catalog = "jpaforbeginners", schema = "public")
-@NamedNativeQuery(name = "Orders.AvgMonthly2", query = """
-	select
-		extract(year from o.billingdate) as year,
-		extract(month from o.billingdate) as month,
-		round(avg(o.total), 2) as average,
-		count(o) as count,
-		o.status as status
-	from orders as o
-	where extract(year from o.billingdate) = ?1 and o.status in (?2)
-	group by year, month, status
-	order by month asc
-	""", resultSetMapping = "OrderSaleMapping2")
-@SqlResultSetMapping(name = "OrderSaleMapping2",
-	classes = @ConstructorResult(targetClass = OrderSale.class,
-		columns = { @ColumnResult(name = "year", type = Integer.class),
-				@ColumnResult(name = "month", type = Integer.class),
-				@ColumnResult(name = "average", type = BigDecimal.class),
-				@ColumnResult(name = "count", type = Long.class),
-				@ColumnResult(name = "status", type = Byte.class) }))
+@NamedNativeQuery(name = "Orders.AvgMonthly2",
+	query = "select extract(year from o.billingdate) as year, extract(month from o.billingdate) as month, "
+			+ "round(avg(o.total), 2) as average, count(o) as count, o.status as status "
+			+ "from orders as o where extract(year from o.billingdate) = ?1 and o.status in (?2) "
+			+ "group by year, month, status order by month asc",
+	resultSetMapping = "OrderSaleMapping2")
+@SqlResultSetMapping(name = "OrderSaleMapping2", classes = @ConstructorResult(targetClass = OrderSale.class,
+	columns = { @ColumnResult(name = "year", type = Integer.class), @ColumnResult(name = "month", type = Integer.class),
+			@ColumnResult(name = "average", type = BigDecimal.class), @ColumnResult(name = "count", type = Long.class),
+			@ColumnResult(name = "status", type = Byte.class) }))
+@SequenceGenerator(catalog = "jpaforbeginners", schema = "public", name = "orders_seq_generator",
+	sequenceName = "orders_id_seq", initialValue = 100, allocationSize = 50)
 public class Order implements Serializable {
 	private static final long serialVersionUID = 1L;
 	
 	static Locale locale = Locale.getDefault();
 	
-	static final DateTimeFormatter DTF = DateTimeFormatter
-			.ofPattern("d/MMM/yyyy", locale);
+	static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("d/MMM/yyyy", locale);
 	
 	static final NumberFormat CF = NumberFormat.getCurrencyInstance(locale);
 	
 	static final NumberFormat PF = NumberFormat.getPercentInstance(locale);
 	
 	@Id
+	@Setter(value = AccessLevel.PROTECTED)
 	@EqualsAndHashCode.Include
-	@SequenceGenerator(catalog = "jpaforbeginners", schema = "public",
-		name = "orders_seq_generator", sequenceName = "orders_id_seq",
-		initialValue = 100, allocationSize = 50)
-	@GeneratedValue(strategy = GenerationType.SEQUENCE,
-		generator = "orders_seq_generator")
-	private long id;
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "orders_seq_generator")
+	private Long id;
 	
 	@Column(name = "billingdate", nullable = false)
 	private LocalDate billingDate;
@@ -95,27 +87,35 @@ public class Order implements Serializable {
 	@JoinColumn(name = "person_id", nullable = false)
 	private Person person;
 	
-	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL,
-		orphanRemoval = true)
+	@Setter(value = AccessLevel.NONE)
+	@CascadeOnDelete
+	@OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<OrderItem> orderItems = new ArrayList<>();
 	
-	public void setOrderItem(OrderItem item) {
-		if (item != null) {
-			this.orderItems.add(item);
-			item.setOrder(this);
+	public void addOrderItem(OrderItem orderItem) {
+		if (orderItem != null && orderItem.getProduct() != null && orderItem.getProduct().isActive()) {
+			this.orderItems.add(orderItem);
+			orderItem.setOrder(this);
 		}
 	}
 	
-	public void setOrderItems(List<OrderItem> items) {
-		items.forEach(this::setOrderItem);
+	public void addOrderItems(Collection<OrderItem> orderItems) {
+		if (orderItems != null) {
+			for (OrderItem orderitem : orderItems) {
+				this.addOrderItem(orderitem);
+			}
+		}
 	}
 	
-	public void setOrderItems(OrderItem... items) {
-		Arrays.asList(items).forEach(this::setOrderItem);
+	public void addOrderItems(OrderItem... orderItems) {
+		if (orderItems != null) {
+			Predicate<OrderItem> productIsActive = oi -> oi.getProduct() != null && oi.getProduct().isActive();
+			Predicate<OrderItem> nonNull = Objects::nonNull;
+			Stream.of(orderItems).filter(nonNull.and(productIsActive)).forEach(this::addOrderItem);
+		}
 	}
 	
-	@Column(name = "discount", nullable = false,
-		columnDefinition = "NUMERIC(4,2)")
+	@Column(name = "discount", nullable = false, columnDefinition = "NUMERIC(4,2)")
 	private float discount = 0;
 	
 	@Setter(value = AccessLevel.NONE)
@@ -136,10 +136,8 @@ public class Order implements Serializable {
 	
 	public BigDecimal calcTotal(List<OrderItem> orderitems, float discount) {
 		if (isNotEmptyOrNull(orderitems)) {
-			return orderitems.stream().map(OrderItem::calcSubTotal)
-					.reduce(BigDecimal.ZERO, BigDecimal::add)
-					.multiply(BigDecimal.ONE
-							.subtract(new BigDecimal(Float.toString(discount))))
+			return orderitems.stream().map(OrderItem::calcSubTotal).reduce(BigDecimal.ZERO, BigDecimal::add)
+					.multiply(BigDecimal.ONE.subtract(new BigDecimal(Float.toString(discount))))
 					.setScale(2, RoundingMode.HALF_EVEN);
 		}
 		return BigDecimal.ZERO;
@@ -179,13 +177,11 @@ public class Order implements Serializable {
 	}
 	
 	@Setter(value = AccessLevel.PROTECTED)
-	@Column(name = "dateinsert", updatable = false,
-		columnDefinition = "TIMESTAMP WITH TIME ZONE")
+	@Column(name = "dateinsert", updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateCreate;
 	
 	@Setter(value = AccessLevel.PROTECTED)
-	@Column(name = "dateupdate", insertable = false,
-		columnDefinition = "TIMESTAMP WITH TIME ZONE")
+	@Column(name = "dateupdate", insertable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateUpdate;
 	
 	public void calcPricesOrder() {
@@ -194,8 +190,7 @@ public class Order implements Serializable {
 	}
 	
 	@Builder(builderMethodName = "maker", buildMethodName = "done")
-	public static Order of(LocalDate billingDate, Person person, float discount,
-			OrderStatus status) {
+	public static Order of(LocalDate billingDate, Person person, float discount, OrderStatus status) {
 		Order order = new Order();
 		order.setBillingDate(billingDate);
 		order.setPerson(person);
@@ -205,20 +200,16 @@ public class Order implements Serializable {
 	}
 	
 	private List<String> listProducts() {
-		return this.getOrderItems().stream().map(OrderItem::getOrderItemInfo)
-				.toList();
+		return this.getOrderItems().stream().map(OrderItem::getOrderItemInfo).toList();
 	}
 	
 	@Override
 	public String toString() {
-		return new ToStringBuilder(this,
-				ToStringStyle.SHORT_PREFIX_STYLE)
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("id", this.getId())
 				.append("person", this.getPerson().getFirstName())
 				.append("billingDate", DTF.format(this.getBillingDate()))
-				.append("discount", PF.format(this.getDiscount()))
-				.append("total", CF.format(this.getTotal()))
-				.append("status", this.getStatus().getValue())
-				.append("products", this.listProducts()).toString();
+				.append("discount", PF.format(this.getDiscount())).append("total", CF.format(this.getTotal()))
+				.append("status", this.getStatus().getValue()).append("products", this.listProducts()).toString();
 	}
 	
 }

@@ -41,14 +41,15 @@ import studyjakartajpa.model.enums.ProductUnit;
 
 @Getter
 @Setter
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @RequiredArgsConstructor
 @Entity
 @EntityListeners(value = { AuditListener.class })
 @Table(name = "products", catalog = "jpaforbeginners", schema = "public")
-@NamedQuery(name = "Product.willExpire", query = """
-	select p from Product p where p.validity <= :date
-	""", resultClass = Product.class)
+@NamedQuery(name = "Product.willExpire", query = "select p from Product p where p.validity <= :date",
+	resultClass = Product.class)
+@SequenceGenerator(catalog = "jpaforbeginners", schema = "public", name = "products_seq_generator",
+	sequenceName = "products_id_seq", initialValue = 100, allocationSize = 50)
 public class Product implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
@@ -62,12 +63,9 @@ public class Product implements Serializable {
 	static final NumberFormat PF = NumberFormat.getPercentInstance(locale);
 	
 	@Id
-	@SequenceGenerator(catalog = "jpaforbeginners", schema = "public",
-		name = "products_seq_generator", sequenceName = "products_id_seq",
-		initialValue = 100, allocationSize = 50)
-	@GeneratedValue(strategy = GenerationType.SEQUENCE,
-		generator = "products_seq_generator")
-	private long id;
+	@Setter(value = AccessLevel.PROTECTED)
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "products_seq_generator")
+	private Long id;
 	
 	@lombok.NonNull
 	@Column(name = "title", length = 150, nullable = false)
@@ -115,18 +113,16 @@ public class Product implements Serializable {
 	private boolean active = true;
 	
 	@Setter(value = AccessLevel.PROTECTED)
-	@Column(name = "dateinsert", updatable = false,
-		columnDefinition = "TIMESTAMP WITH TIME ZONE")
+	@Column(name = "dateinsert", updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateCreate;
 	
 	@Setter(value = AccessLevel.PROTECTED)
-	@Column(name = "dateupdate", insertable = false,
-		columnDefinition = "TIMESTAMP WITH TIME ZONE")
+	@Column(name = "dateupdate", insertable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
 	private LocalDateTime dateUpdate;
 	
 	@Builder(builderMethodName = "maker", buildMethodName = "done")
-	public static Product of(String title, String description,
-			BigDecimal discount, BigDecimal unitPrice, ProductUnit unit) {
+	public static Product of(String title, String description, BigDecimal discount, BigDecimal unitPrice,
+			ProductUnit unit) {
 		
 		Objects.requireNonNull(title, "Title can't be null");
 		title = title.trim();
@@ -158,18 +154,16 @@ public class Product implements Serializable {
 		return product;
 	}
 	
-	public static Product of(String title, String description,
-			BigDecimal discount, double unitPrice, ProductUnit unit) {
+	public static Product of(String title, String description, BigDecimal discount, double unitPrice,
+			ProductUnit unit) {
 		return of(title, description, discount, BigDecimal.valueOf(unitPrice), unit);
 	}
 	
 	@Override
 	public String toString() {
-		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-				.append("id", this.getId()).append("title", this.getTitle())
-				.append("description", this.getDescription())
-				.append("price", this.getPriceInfo())
-				.append("unit", this.getUnit().getValue())
+		return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("id", this.getId())
+				.append("title", this.getTitle()).append("description", this.getDescription())
+				.append("price", this.getPriceInfo()).append("unit", this.getUnit().getValue())
 				.append("validity", this.getValidity()).build();
 	}
 	
@@ -182,8 +176,7 @@ public class Product implements Serializable {
 	
 	public String getProductInfo() {
 		return "%s-%s=%s".formatted(this.getId(), this.getTitle(),
-				Optional.ofNullable(getPriceInfo()).filter(s -> !s.isBlank())
-						.orElse(""));
+				Optional.ofNullable(getPriceInfo()).filter(s -> !s.isBlank()).orElse(""));
 	}
 	
 	/**
@@ -194,25 +187,23 @@ public class Product implements Serializable {
 	public BigDecimal getPriceWithDiscount() {
 		if (this.getDiscount() == null || this.getDiscount().compareTo(BigDecimal.ZERO) == 0)
 			return this.getUnitPrice().setScale(2, RoundingMode.HALF_EVEN);
-		return this.getUnitPrice()
-				.multiply(BigDecimal.ONE.subtract(this.getDiscount()))
-				.setScale(2, RoundingMode.HALF_EVEN);
+		return this.getUnitPrice().multiply(BigDecimal.ONE.subtract(this.getDiscount())).setScale(2,
+				RoundingMode.HALF_EVEN);
 	}
 	
 	/**
-	 * Overload accepting a decimal additional discount (0..1).
+	 * Overload accepting a decimal additional discount [0...1](0%...100%).
 	 */
 	public BigDecimal getPriceWithDiscount(BigDecimal addDiscount) {
 		if (addDiscount == null || addDiscount.compareTo(BigDecimal.ZERO) == 0)
 			return this.getPriceWithDiscount();
-		return this.getPriceWithDiscount()
-				.multiply(BigDecimal.ONE.subtract(addDiscount))
-				.setScale(2, RoundingMode.HALF_EVEN);
+		return this.getPriceWithDiscount().multiply(BigDecimal.ONE.subtract(addDiscount)).setScale(2,
+				RoundingMode.HALF_EVEN);
 	}
 	
 	/**
-	 * Define expiration datetime (years, months, days, hours, minutes and
-	 * seconds) for product. Considers default zone_id.
+	 * Define expiration datetime (years, months, days, hours, minutes and seconds)
+	 * for product. Considers default zone_id.
 	 * 
 	 * @param i    amount of time
 	 * @param unit ChronoUnit (LIMITED to days/weeks/months/years)
@@ -223,16 +214,13 @@ public class Product implements Serializable {
 	}
 	
 	public Product setValidity(long i, TemporalUnit unit, ZoneId zoneId) {
-		LocalDate date = this.getDateCreate() != null
-				? this.getDateCreate().toLocalDate()
-				: LocalDate.now(zoneId);
+		LocalDate date = this.getDateCreate() != null ? this.getDateCreate().toLocalDate() : LocalDate.now(zoneId);
 		setValidity(switch (unit) {
 			case ChronoUnit.DAYS -> date.plusDays(i);
 			case ChronoUnit.WEEKS -> date.plusWeeks(i);
 			case ChronoUnit.MONTHS -> date.plusMonths(i);
 			case ChronoUnit.YEARS -> date.plusYears(i);
-			default ->
-				throw new IllegalArgumentException("Unexpected value: " + unit);
+			default -> throw new IllegalArgumentException("Unexpected value: " + unit);
 		});
 		return this;
 	}

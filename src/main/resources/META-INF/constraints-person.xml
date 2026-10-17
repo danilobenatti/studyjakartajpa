@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<constraint-mappings xmlns="https://jakarta.ee/xml/ns/validation/mapping"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+		https://jakarta.ee/xml/ns/validation/mapping 
+		https://jakarta.ee/xml/ns/validation/validation-mapping-3.1.xsd"
+	version="3.1">
+	<bean class="studyjakartajpa.model.Person" ignore-annotations="false">
+		<class>
+			<constraint annotation="studyjakartajpa.validation.ValidPersonDates">
+				<message>The date of death must be the same as or later than the date of birth.</message>
+			</constraint>
+		</class>
+		<field name="firstName">
+			<constraint annotation="jakarta.validation.constraints.NotNull">
+				<message>First name cannot be null.</message>
+			</constraint>
+		</field>
+		<field name="gender">
+			<constraint annotation="jakarta.validation.constraints.NotNull">
+				<message>Gender cannot be null.</message>
+			</constraint>
+		</field>
+		<field name="birthdate">
+			<constraint annotation="jakarta.validation.constraints.Past"></constraint>
+			<constraint annotation="jakarta.validation.constraints.NotNull">
+				<message>The date of birth cannot be null or a future date.</message>
+			</constraint>
+		</field>
+		<field name="deathdate">
+			<constraint annotation="jakarta.validation.constraints.PastOrPresent">
+				<message>The date of death cannot be a future date.</message>
+			</constraint>
+		</field>
+	</bean>
+
+</constraint-mappings>
